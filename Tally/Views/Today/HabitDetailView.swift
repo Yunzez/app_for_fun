@@ -288,6 +288,8 @@ private struct DurationController: View {
 // MARK: - History
 
 private struct HistoryRow: View {
+    @Environment(\.theme) private var theme
+
     let habit: Habit
     let entry: Entry
 
@@ -335,6 +337,7 @@ private struct HistoryRow: View {
 
 private struct EntryEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.theme) private var theme
 
     let habit: Habit
     let entry: Entry
