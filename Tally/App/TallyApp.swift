@@ -5,6 +5,7 @@ import SwiftData
 struct TallyApp: App {
     let modelContainer: ModelContainer
     @State private var timerService = TimerService()
+    @State private var healthKitService = HealthKitService()
 
     init() {
         do {
@@ -42,6 +43,7 @@ struct TallyApp: App {
             ContentView()
                 .environment(\.theme, .slate)
                 .environment(timerService)
+                .environment(healthKitService)
         }
         .modelContainer(modelContainer)
     }

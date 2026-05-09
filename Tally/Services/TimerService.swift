@@ -91,6 +91,7 @@ final class TimerService {
         }
         let entry = HabitStore(context: context).entry(for: habit)
         entry.value += elapsed
+        entry.source = .manual
         let session = TimerSession(entry: entry, startedAt: startedAt)
         session.endedAt = endedAt
         session.pausedAccumulated = paused

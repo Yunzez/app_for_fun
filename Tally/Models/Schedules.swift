@@ -5,6 +5,13 @@ enum GoalKind: String, Codable, Hashable, CaseIterable {
     case duration
 }
 
+/// Where the value on an `Entry` came from. `.manual` always wins over
+/// `.healthkit` — once the user touches an entry, HealthKit can't overwrite it.
+enum EntrySource: String, Codable, Hashable {
+    case manual
+    case healthkit
+}
+
 enum Weekday: Int, Codable, Hashable, CaseIterable, Identifiable {
     case sunday = 1, monday, tuesday, wednesday, thursday, friday, saturday
 

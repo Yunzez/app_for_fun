@@ -72,15 +72,19 @@ struct HabitStore {
     }
 
     /// Adjust today's Entry value by `amount` (negative to decrement). Floors at 0.
+    /// Marks the entry as manually edited so HealthKit auto-fill won't overwrite it.
     func adjust(_ habit: Habit, by amount: Double, on date: Date = .now) {
         let entry = entry(for: habit, on: date)
         entry.value = max(0, entry.value + amount)
+        entry.source = .manual
     }
 
     /// Set today's Entry value directly. Used for manual corrections.
+    /// Marks the entry as manually edited.
     func setValue(_ habit: Habit, to value: Double, on date: Date = .now) {
         let entry = entry(for: habit, on: date)
         entry.value = max(0, value)
+        entry.source = .manual
     }
 
     /// Set today's Entry note (clears if `note` is nil or whitespace-only).
