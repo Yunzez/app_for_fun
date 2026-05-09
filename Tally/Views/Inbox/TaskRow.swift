@@ -27,12 +27,12 @@ struct TaskRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
-                    .strikethrough(task.isDone, color: .secondary)
-                    .foregroundStyle(task.isDone ? .secondary : .primary)
+                    .strikethrough(task.isDone, color: theme.textSecondary)
+                    .foregroundStyle(task.isDone ? theme.textSecondary : theme.textPrimary)
                 if let due = task.dueDate {
                     Text(dueDateLabel(due))
                         .font(.caption)
-                        .foregroundStyle(isOverdue(due) ? theme.error : .secondary)
+                        .foregroundStyle(isOverdue(due) ? theme.error : theme.textSecondary)
                 }
             }
 

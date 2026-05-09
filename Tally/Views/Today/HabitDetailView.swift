@@ -28,13 +28,15 @@ struct HabitDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 header
-                Divider()
+                TallyDivider()
                 progressSection
-                Divider()
+                TallyDivider()
                 HabitTaskSection(habit: habit)
-                Divider()
+                TallyDivider()
+                HabitStatsSection(habit: habit)
+                TallyDivider()
                 notesSection
-                Divider()
+                TallyDivider()
                 historySection
             }
             .padding(20)
@@ -96,14 +98,14 @@ struct HabitDetailView: View {
             ZStack {
                 Circle()
                     .fill(accent.opacity(0.15))
-                    .frame(width: 60, height: 60)
+                    .frame(width: Tokens.IconSize.large, height: Tokens.IconSize.large)
                 Image(systemName: habit.iconName)
                     .foregroundStyle(accent)
                     .font(.system(size: 26, weight: .semibold))
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name).font(.title2.weight(.semibold))
-                Text(scheduleText).foregroundStyle(.secondary).font(.caption)
+                Text(scheduleText).foregroundStyle(theme.textSecondary).font(.caption)
             }
             Spacer()
         }
@@ -111,7 +113,7 @@ struct HabitDetailView: View {
 
     private var progressSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Today").font(.title3.weight(.semibold))
+            SectionTitle("Today")
             switch habit.goalKind {
             case .count:
                 CountController(habit: habit)
@@ -123,7 +125,7 @@ struct HabitDetailView: View {
 
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Notes").font(.title3.weight(.semibold))
+            SectionTitle("Notes")
             TextField(
                 "Anything to remember about today?",
                 text: $noteDraft,
@@ -140,12 +142,12 @@ struct HabitDetailView: View {
 
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("History").font(.title3.weight(.semibold))
+            SectionTitle("History")
             let recent = habit.entries
                 .sorted { $0.date > $1.date }
                 .prefix(30)
             if recent.isEmpty {
-                Text("No history yet.").foregroundStyle(.secondary)
+                Text("No history yet.").foregroundStyle(theme.textSecondary)
             } else {
                 ForEach(Array(recent), id: \.id) { entry in
                     HistoryRow(habit: habit, entry: entry)
@@ -187,7 +189,7 @@ private struct CountController: View {
                     .monospacedDigit()
                 Text("/ \(targetValue)")
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
                 Spacer()
             }
 
@@ -243,7 +245,7 @@ private struct DurationController: View {
 
             HStack {
                 Text("Target: \(formatGoal(targetSeconds))")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
                 Spacer()
             }
 
@@ -316,10 +318,10 @@ private struct HistoryRow: View {
             HStack {
                 Text(dateLabel).foregroundStyle(.primary)
                 Spacer()
-                Text(displayValue).foregroundStyle(.secondary)
+                Text(displayValue).foregroundStyle(theme.textSecondary)
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
             }
             .padding(.vertical, 6)
             .contentShape(Rectangle())
@@ -346,7 +348,7 @@ private struct EntryEditorSheet: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Text(entryDateLabel)
                         .font(.headline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
 
                     switch habit.goalKind {
                     case .count:
@@ -354,7 +356,7 @@ private struct EntryEditorSheet: View {
                             HStack {
                                 Text("Count")
                                 Spacer()
-                                Text("\(Int(draft))").foregroundStyle(.secondary)
+                                Text("\(Int(draft))").foregroundStyle(theme.textSecondary)
                             }
                         }
                     case .duration:
@@ -362,7 +364,7 @@ private struct EntryEditorSheet: View {
                             HStack {
                                 Text("Duration")
                                 Spacer()
-                                Text("\(Int(draft / 60)) min").foregroundStyle(.secondary)
+                                Text("\(Int(draft / 60)) min").foregroundStyle(theme.textSecondary)
                             }
                         }
                     }

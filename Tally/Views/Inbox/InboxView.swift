@@ -12,6 +12,14 @@ struct InboxView: View {
         allTasks.filter { $0.habit == nil }
     }
 
+    private var openInboxTasks: [TodoTask] {
+        inboxTasks.filter { !$0.isDone }
+    }
+
+    private var doneInboxTasks: [TodoTask] {
+        inboxTasks.filter { $0.isDone }
+    }
+
     @State private var creating: Bool = false
     @State private var editingTask: TodoTask?
 
@@ -21,15 +29,28 @@ struct InboxView: View {
                 if inboxTasks.isEmpty {
                     Section {
                         Text("Inbox is empty. Tap + to capture something.")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.textSecondary)
                     }
                 } else {
-                    ForEach(inboxTasks) { task in
-                        TaskRow(task: task) {
-                            editingTask = task
+                    if !openInboxTasks.isEmpty {
+                        Section {
+                            ForEach(openInboxTasks) { task in
+                                TaskRow(task: task) {
+                                    editingTask = task
+                                }
+                            }
+                            .onMove(perform: moveOpen)
                         }
                     }
-                    .onMove(perform: move)
+                    if !doneInboxTasks.isEmpty {
+                        Section("Done") {
+                            ForEach(doneInboxTasks) { task in
+                                TaskRow(task: task) {
+                                    editingTask = task
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .navigationTitle("Inbox")
@@ -56,9 +77,11 @@ struct InboxView: View {
         }
     }
 
-    private func move(from offsets: IndexSet, to dest: Int) {
-        var reordered = inboxTasks
-        reordered.move(fromOffsets: offsets, toOffset: dest)
-        HabitStore(context: context).reorderTasks(reordered)
+    private func moveOpen(from offsets: IndexSet, to dest: Int) {
+        var reorderedOpen = openInboxTasks
+        reorderedOpen.move(fromOffsets: offsets, toOffset: dest)
+        // Open tasks first, done tasks keep relative order at the end.
+        let combined = reorderedOpen + doneInboxTasks
+        HabitStore(context: context).reorderTasks(combined)
     }
 }

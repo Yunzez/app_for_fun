@@ -15,7 +15,7 @@ struct HabitRow: View {
             ZStack {
                 Circle()
                     .fill(accent.opacity(0.18))
-                    .frame(width: 36, height: 36)
+                    .frame(width: Tokens.IconSize.medium, height: Tokens.IconSize.medium)
                 Image(systemName: habit.iconName)
                     .foregroundStyle(accent)
                     .font(.system(size: 16, weight: .semibold))

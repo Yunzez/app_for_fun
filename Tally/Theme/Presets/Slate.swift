@@ -4,8 +4,8 @@ extension ThemePalette {
     static let slate = ThemePalette(
         id: "slate",
         displayName: "Slate",
-        accentPrimary:       .adaptive(light: 0x3A3F47, dark: 0xC8CCD4),
-        accentSecondary:     .adaptive(light: 0x6B7380, dark: 0x8A92A0),
+        accentPrimary:       .adaptive(light: 0x6366F1, dark: 0xA5B4FC),
+        accentSecondary:     .adaptive(light: 0x818CF8, dark: 0xC7D2FE),
         backgroundPrimary:   .adaptive(light: 0xFFFFFF, dark: 0x15171C),
         backgroundSecondary: .adaptive(light: 0xF6F7F9, dark: 0x1D2027),
         backgroundTertiary:  .adaptive(light: 0xECEEF2, dark: 0x252830),

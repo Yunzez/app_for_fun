@@ -6,8 +6,14 @@ struct ContentView: View {
             TodayView()
                 .tabItem { Label("Today", systemImage: "checkmark.circle") }
 
+            HabitListView()
+                .tabItem { Label("Habits", systemImage: "list.bullet") }
+
             InboxView()
                 .tabItem { Label("Inbox", systemImage: "tray") }
+
+            StatsView()
+                .tabItem { Label("Stats", systemImage: "chart.bar.fill") }
         }
     }
 }

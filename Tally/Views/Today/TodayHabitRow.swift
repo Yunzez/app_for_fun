@@ -36,18 +36,20 @@ struct TodayHabitRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Tokens.Spacing.medium) {
             ZStack {
                 ProgressRing(progress: progress, accent: accent)
-                    .frame(width: 40, height: 40)
+                    .frame(width: Tokens.IconSize.medium, height: Tokens.IconSize.medium)
                 Image(systemName: habit.iconName)
                     .foregroundStyle(accent)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(habit.name).font(.body)
+                    Text(habit.name)
+                        .font(.body)
+                        .foregroundStyle(theme.textPrimary)
                     if isComplete {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(theme.success)
@@ -65,13 +67,13 @@ struct TodayHabitRow: View {
                         Text("· \(openTasksCount) open task\(openTasksCount == 1 ? "" : "s")")
                     }
                 }
-                .foregroundStyle(.secondary)
                 .font(.caption)
+                .foregroundStyle(theme.textSecondary)
             }
 
             Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Tokens.Spacing.xs)
     }
 
     private var progressText: String {

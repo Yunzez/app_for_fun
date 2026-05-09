@@ -13,7 +13,7 @@ struct TodayView: View {
     private var allHabits: [Habit]
 
     @State private var showCreateForm: Bool = false
-    @State private var showAllHabits: Bool = false
+    @State private var showSettings: Bool = false
 
     private var todaysHabits: [Habit] {
         allHabits.filter { $0.schedule.isScheduled(on: .now) }
@@ -27,7 +27,7 @@ struct TodayView: View {
                         Text(allHabits.isEmpty
                             ? "No habits yet. Add one in the Habits tab."
                             : "Nothing scheduled for today.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                     }
                 } else {
                     ForEach(todaysHabits) { habit in
@@ -51,9 +51,9 @@ struct TodayView: View {
             .toolbar {
                 ToolbarItem(placement: .navigation) {
                     Button {
-                        showAllHabits = true
+                        showSettings = true
                     } label: {
-                        Label("All Habits", systemImage: "list.bullet")
+                        Label("Settings", systemImage: "gear")
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
@@ -67,8 +67,8 @@ struct TodayView: View {
             .sheet(isPresented: $showCreateForm) {
                 HabitFormView(habit: nil)
             }
-            .sheet(isPresented: $showAllHabits) {
-                HabitListView(dismissable: true)
+            .sheet(isPresented: $showSettings) {
+                SettingsSheet()
             }
         }
     }
