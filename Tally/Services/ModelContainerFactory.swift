@@ -2,9 +2,14 @@ import Foundation
 import SwiftData
 
 enum ModelContainerFactory {
-    /// Build the app's SwiftData container with CloudKit sync.
-    /// `cloudKitDatabase: .automatic` reads the container identifier
-    /// from the entitlements file at runtime.
+    /// Flip to `false` for a local-only store (no CloudKit sync).
+    /// Useful when debugging container-init failures caused by a missing or
+    /// misconfigured iCloud container in the Apple Developer account.
+    static let useCloudKit: Bool = false
+
+    /// Build the app's SwiftData container.
+    /// When `useCloudKit` is true, `cloudKitDatabase: .automatic` reads the
+    /// container identifier from the entitlements file at runtime.
     static func makeContainer() throws -> ModelContainer {
         let schema = Schema([
             Habit.self,
@@ -16,7 +21,7 @@ enum ModelContainerFactory {
             "Tally",
             schema: schema,
             isStoredInMemoryOnly: false,
-            cloudKitDatabase: .automatic
+            cloudKitDatabase: useCloudKit ? .automatic : .none
         )
         return try ModelContainer(for: schema, configurations: [configuration])
     }
