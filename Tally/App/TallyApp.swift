@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct TallyApp: App {
     let modelContainer: ModelContainer
+    @State private var timerService = TimerService()
 
     init() {
         do {
@@ -40,6 +41,7 @@ struct TallyApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.theme, .slate)
+                .environment(timerService)
         }
         .modelContainer(modelContainer)
     }

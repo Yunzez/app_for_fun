@@ -71,6 +71,25 @@ struct HabitStore {
         return entry
     }
 
+    /// Adjust today's Entry value by `amount` (negative to decrement). Floors at 0.
+    func adjust(_ habit: Habit, by amount: Double, on date: Date = .now) {
+        let entry = entry(for: habit, on: date)
+        entry.value = max(0, entry.value + amount)
+    }
+
+    /// Set today's Entry value directly. Used for manual corrections.
+    func setValue(_ habit: Habit, to value: Double, on date: Date = .now) {
+        let entry = entry(for: habit, on: date)
+        entry.value = max(0, value)
+    }
+
+    /// Set today's Entry note (clears if `note` is nil or whitespace-only).
+    func setNote(_ habit: Habit, to note: String?, on date: Date = .now) {
+        let entry = entry(for: habit, on: date)
+        let trimmed = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.note = (trimmed?.isEmpty ?? true) ? nil : trimmed
+    }
+
     // MARK: - Internals
 
     private func maxSortOrder() throws -> Int {
