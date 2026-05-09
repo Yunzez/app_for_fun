@@ -59,7 +59,7 @@ enum HabitSchedule: Codable, Hashable {
     }
 }
 
-enum HealthBinding: Codable, Hashable {
+enum HealthBinding: String, Codable, Hashable, CaseIterable {
     case steps
     case activeEnergy
     case workoutDuration
