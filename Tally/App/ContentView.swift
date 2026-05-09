@@ -4,7 +4,7 @@ struct ContentView: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        PingListView()
+        HabitListView()
             .background(theme.backgroundPrimary.ignoresSafeArea())
             .foregroundStyle(theme.textPrimary)
     }
@@ -12,6 +12,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Ping.self, inMemory: true)
+        .modelContainer(for: Habit.self, inMemory: true)
         .environment(\.theme, .slate)
 }

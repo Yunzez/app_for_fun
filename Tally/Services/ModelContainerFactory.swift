@@ -7,7 +7,10 @@ enum ModelContainerFactory {
     /// from the entitlements file at runtime.
     static func makeContainer() throws -> ModelContainer {
         let schema = Schema([
-            Ping.self
+            Habit.self,
+            Entry.self,
+            TimerSession.self,
+            TodoTask.self
         ])
         let configuration = ModelConfiguration(
             "Tally",
