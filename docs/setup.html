@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tally — Setup &amp; M0 Validation</title>
+<style>
+  :root {
+    --bg: #ffffff; --bg-soft: #f6f7f9; --bg-code: #f0f2f5;
+    --fg: #1c1f24; --fg-soft: #555a63; --fg-faint: #8a909a;
+    --accent: #4a6cf7; --accent-soft: #e7ecfe;
+    --border: #e3e6eb; --warn: #b15a00; --ok: #1f7a3a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171c; --bg-soft: #1d2027; --bg-code: #1a1d24;
+      --fg: #e6e8ec; --fg-soft: #a8acb6; --fg-faint: #6c717c;
+      --accent: #8ba4ff; --accent-soft: #25304f;
+      --border: #2a2e37; --warn: #e0a35f; --ok: #6ec890;
+    }
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem 6rem; font-size: 16px; }
+  h1, h2, h3 { line-height: 1.25; font-weight: 600; }
+  h1 { font-size: 2rem; margin: 0 0 0.25rem; }
+  h2 { font-size: 1.4rem; margin: 2.5rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 0.4rem; }
+  p, ul, ol { margin: 0.6rem 0; }
+  a { color: var(--accent); }
+  code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; background: var(--bg-code); padding: 0.1em 0.35em; border-radius: 4px; }
+  pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--bg-code); padding: 0.9rem 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); line-height: 1.45; }
+  pre code { background: transparent; padding: 0; }
+  .meta { color: var(--fg-faint); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .callout { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 0.7rem 1rem; border-radius: 6px; margin: 1rem 0; }
+  .callout.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); border-left-color: var(--warn); }
+  .small { color: var(--fg-soft); font-size: 0.92rem; }
+  ol li, ul li { margin: 0.25rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Setup &amp; M0 Validation</h1>
+<div class="meta">v0.1 &middot; 2026-05-09 &middot; companion to <a href="design.html">design.html</a> and <a href="mvp-plan.html">mvp-plan.html</a></div>
+
+<div class="callout">
+  This guide turns the source tree in this repo into a buildable Xcode project on your Mac, then walks through the M0 validation step (verify SwiftData + CloudKit sync between iPhone and Mac).
+</div>
+
+<h2 id="prereqs">1. Prerequisites</h2>
+<ul>
+  <li>macOS 15+ with <strong>Xcode 16</strong> (Swift 6 toolchain).</li>
+  <li>Apple Developer account (for CloudKit, HealthKit, push entitlements).</li>
+  <li><strong>XcodeGen</strong> — installed via Homebrew: <code>brew install xcodegen</code>. (We use this because hand-authored <code>.xcodeproj</code> files are noisy and the YAML config is reviewable.)</li>
+</ul>
+
+<h2 id="materialize">2. Materialize the Xcode project</h2>
+<p>From the repo root on your Mac:</p>
+<pre><code>cd app_for_fun
+xcodegen
+open Tally.xcodeproj</code></pre>
+<p>This generates <code>Tally.xcodeproj</code> from <code>project.yml</code>. The <code>.xcodeproj</code> is gitignored — regenerate any time the source tree changes.</p>
+
+<h2 id="signing">3. Configure signing &amp; identifiers</h2>
+<p>The project ships with placeholder identifiers. Update them once for your team.</p>
+
+<h3>3.1 Pick your bundle id</h3>
+<p>Decide on a reverse-DNS bundle id (e.g., <code>com.yourname.Tally</code>). Update three places:</p>
+<ol>
+  <li><code>project.yml</code> → <code>options.bundleIdPrefix</code> and <code>targets.Tally.settings.base.PRODUCT_BUNDLE_IDENTIFIER</code>.</li>
+  <li><code>Tally/Resources/Tally.entitlements</code> → <code>com.apple.developer.icloud-container-identifiers</code> (use <code>iCloud.&lt;your.bundle.id&gt;</code>) and <code>com.apple.security.application-groups</code> (use <code>group.&lt;your.bundle.id&gt;</code>).</li>
+  <li>Re-run <code>xcodegen</code> after editing <code>project.yml</code>.</li>
+</ol>
+
+<h3>3.2 Set the development team in Xcode</h3>
+<p>Open <code>Tally.xcodeproj</code> → select the <strong>Tally</strong> target → <strong>Signing &amp; Capabilities</strong> → choose your Team. Repeat for the macOS destination.</p>
+
+<h3>3.3 Create the iCloud container</h3>
+<p>In Xcode's Signing &amp; Capabilities tab:</p>
+<ol>
+  <li>Confirm the iCloud capability is present (it's wired in the entitlements file).</li>
+  <li>Under <strong>Containers</strong>, click the <code>+</code> and create the container matching the id from §3.1 (Xcode auto-prefixes with <code>iCloud.</code>).</li>
+  <li>Same for the App Group (<code>group.&lt;your.bundle.id&gt;</code>).</li>
+</ol>
+<div class="callout warn">
+  <strong>If signing fails:</strong> the most common cause is the iCloud container ID in the entitlements file not matching one that exists on your developer account. Either create it in the Apple Developer portal first, or let Xcode create it on your behalf via the <code>+</code> button.
+</div>
+
+<h2 id="run">4. Build &amp; run</h2>
+<ul>
+  <li><strong>iPhone:</strong> select an iPhone destination (your physical device, not the simulator — CloudKit needs a signed-in iCloud account). Build and run.</li>
+  <li><strong>Mac:</strong> select <strong>My Mac</strong>. Build and run.</li>
+  <li>Both devices must be signed into the same iCloud account.</li>
+</ul>
+
+<h2 id="validate">5. M0 validation checklist</h2>
+<p>From <a href="mvp-plan.html#m0">mvp-plan.html M0</a>. Tick all four to mark M0 done.</p>
+<ol>
+  <li>Launch the app on iPhone. The list view says "No pings yet."</li>
+  <li>Tap <code>+</code> three times. Three rows appear, newest first.</li>
+  <li>Launch the app on the Mac. Within ~30 seconds, the same three rows appear.</li>
+  <li>Swipe-delete a row on the Mac. It disappears from the iPhone within ~30 seconds.</li>
+</ol>
+<p class="small">If sync takes longer than ~60 seconds the first time, that's normal — CloudKit warm-up. Subsequent updates are usually within a few seconds.</p>
+
+<h2 id="trouble">6. Troubleshooting</h2>
+<ul>
+  <li><strong>Build error: "Provisioning profile doesn't include the iCloud container."</strong> The container id in entitlements doesn't match one on your account. Check §3.3.</li>
+  <li><strong>Build error: "Use of unresolved identifier 'ModelConfiguration'."</strong> You're on a too-old Xcode. SwiftData needs Xcode 15+ and we target the iOS 18 SDK, so use Xcode 16.</li>
+  <li><strong>App runs but rows don't sync.</strong> Both devices need to be signed into iCloud, and the iCloud account must have iCloud Drive enabled. Check Settings → [your name] → iCloud on each device.</li>
+  <li><strong>SwiftData crash on launch about "missing default values."</strong> If you've added new model properties without defaults, CloudKit-backed SwiftData rejects them. Every property needs either a default value or be optional. (Already true for <code>Ping</code>; relevant when M1 lands.)</li>
+</ul>
+
+<h2 id="afterm0">7. After M0</h2>
+<p>When the validation checklist passes, M0 is done. Proceed to <a href="mvp-plan.html#m1">M1 — data model &amp; habit CRUD</a>: the placeholder <code>Ping</code> model gets removed and the real <code>Habit</code> / <code>Entry</code> / <code>TimerSession</code> / <code>TodoTask</code> entities take its place.</p>
+
+</body>
+</html>

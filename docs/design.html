@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tally — Design Document (v0.2)</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f6f7f9;
+    --bg-code: #f0f2f5;
+    --fg: #1c1f24;
+    --fg-soft: #555a63;
+    --fg-faint: #8a909a;
+    --accent: #4a6cf7;
+    --accent-soft: #e7ecfe;
+    --border: #e3e6eb;
+    --warn: #b15a00;
+    --ok: #1f7a3a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171c;
+      --bg-soft: #1d2027;
+      --bg-code: #1a1d24;
+      --fg: #e6e8ec;
+      --fg-soft: #a8acb6;
+      --fg-faint: #6c717c;
+      --accent: #8ba4ff;
+      --accent-soft: #25304f;
+      --border: #2a2e37;
+      --warn: #e0a35f;
+      --ok: #6ec890;
+    }
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 6rem;
+    font-size: 16px;
+  }
+  h1, h2, h3, h4 { line-height: 1.25; font-weight: 600; }
+  h1 { font-size: 2rem; margin: 0 0 0.25rem; }
+  h2 { font-size: 1.4rem; margin: 2.5rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.2rem 0 0.4rem; color: var(--fg-soft); }
+  p, ul, ol { margin: 0.6rem 0; }
+  a { color: var(--accent); }
+  code, pre {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.92em;
+  }
+  code { background: var(--bg-code); padding: 0.1em 0.35em; border-radius: 4px; }
+  pre {
+    background: var(--bg-code);
+    padding: 0.9rem 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    line-height: 1.45;
+  }
+  pre code { background: transparent; padding: 0; }
+  .meta { color: var(--fg-faint); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .callout {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 0.7rem 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+  }
+  .callout.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); border-left-color: var(--warn); }
+  .toc { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1.2rem; margin: 1.2rem 0 2rem; }
+  .toc ol { margin: 0.4rem 0; padding-left: 1.4rem; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; font-size: 0.94rem; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 600; }
+  .pill { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 999px; font-size: 0.78rem; background: var(--bg-soft); border: 1px solid var(--border); color: var(--fg-soft); }
+  .pill.mvp { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); border-color: transparent; }
+  .pill.v11 { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); border-color: transparent; }
+  .swatch { display: inline-block; width: 0.95em; height: 0.95em; border-radius: 4px; vertical-align: middle; margin-right: 0.35em; border: 1px solid var(--border); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+  .small { color: var(--fg-soft); font-size: 0.92rem; }
+</style>
+</head>
+<body>
+
+<h1>Tally — Design Document</h1>
+<div class="meta">v0.2 &middot; 2026-05-09 &middot; app name: <strong>Tally</strong> &middot; repo dir: <code>app_for_fun</code> (unchanged)</div>
+
+<div class="callout">
+  <strong>Status:</strong> design locked, no code yet. The questions from v0.1 are now resolved (see §10). Update this doc in place as further decisions land.
+</div>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#overview">Overview &amp; vision</a></li>
+    <li><a href="#goals">Goals &amp; non-goals</a></li>
+    <li><a href="#stack">Tech stack</a></li>
+    <li><a href="#data">Data model</a></li>
+    <li><a href="#sync">Sync &amp; HealthKit</a></li>
+    <li><a href="#themes">Theme system</a></li>
+    <li><a href="#ux">UX outline</a></li>
+    <li><a href="#roadmap">Feature roadmap</a></li>
+    <li><a href="#structure">Project structure</a></li>
+    <li><a href="#open">Open questions</a></li>
+  </ol>
+</div>
+
+<h2 id="overview">1. Overview &amp; vision</h2>
+<p>
+<strong>Tally</strong> is a native habit tracker for iPhone, iPad, and Mac, replacing the user's daily-driver
+<a href="https://www.awesome-habits.com/">Awesome Habits</a>. The app is designed for personal use first;
+App Store distribution is possible but not the primary goal.
+</p>
+<p>
+The differentiating feature is <strong>per-habit task lists</strong>. The user uses habit timers as a container
+for either workouts or study, but the timer alone doesn't capture the structure of a session
+(today's lifts, today's reading queue). The app introduces:
+</p>
+<ul>
+  <li>A <strong>global Inbox</strong> — casual capture of any task, no commitment.</li>
+  <li>A <strong>per-habit task list</strong> — tasks scoped to that habit (e.g., "Workout" holds today's lift plan).</li>
+  <li><strong>Drag &amp; drop</strong> between Inbox and habits, and between habits.</li>
+</ul>
+
+<h2 id="goals">2. Goals &amp; non-goals</h2>
+<h4>Goals</h4>
+<ul>
+  <li>Match Awesome Habits feature parity for habits, timers, stats, widgets, and HealthKit ingestion.</li>
+  <li>Add the Inbox + per-habit tasks model, with drag/drop.</li>
+  <li>Sync via iCloud automatically across the user's devices, with no account.</li>
+  <li>Look and feel native on iOS and macOS; share ~95% of UI code via SwiftUI.</li>
+  <li>Make the color theme entirely abstract so palettes can be swapped later without touching views.</li>
+</ul>
+<h4>Non-goals (for now)</h4>
+<ul>
+  <li>Multi-user collaboration / sharing.</li>
+  <li>Web app / non-Apple platforms.</li>
+  <li>Server-side anything. CloudKit is the only backend.</li>
+  <li>Apple Watch app in v1.0 — added in v1.1.</li>
+  <li>Generic plugin system / scripting.</li>
+</ul>
+
+<h2 id="stack">3. Tech stack</h2>
+<table>
+  <tr><th>Layer</th><th>Choice</th><th>Notes</th></tr>
+  <tr><td>Language</td><td>Swift 6</td><td>Strict concurrency on.</td></tr>
+  <tr><td>UI</td><td>SwiftUI</td><td>Single multiplatform target; <code>#if os(macOS)</code> for platform-specific bits (menu bar, sidebar styling).</td></tr>
+  <tr><td>Persistence</td><td>SwiftData</td><td>Modern Core Data wrapper. iOS 18+ has resolved most of the issues from the iOS 17 launch.</td></tr>
+  <tr><td>Sync</td><td>SwiftData + CloudKit</td><td>Private database, automatic sync via the SwiftData CloudKit option. No accounts.</td></tr>
+  <tr><td>Health</td><td>HealthKit</td><td>Read-only. Steps, active energy, workouts, sleep, mindful minutes.</td></tr>
+  <tr><td>Notifications</td><td>UserNotifications</td><td>Local notifications only (no push).</td></tr>
+  <tr><td>Widgets</td><td>WidgetKit</td><td>Interactive widgets on iOS 17+ via App Intents.</td></tr>
+  <tr><td>Live timer</td><td>ActivityKit</td><td>v1.1: Live Activities + Dynamic Island for active timers.</td></tr>
+  <tr><td>Min OS</td><td>iOS 18 / iPadOS 18 / macOS 15</td><td>Confirmed. Buys us SwiftData improvements, interactive widgets, latest App Intents.</td></tr>
+</table>
+<div class="callout">
+  <strong>SwiftData fallback plan:</strong> if we hit a SwiftData blocker during build (complex predicates, bulk import, schema migration weirdness), we drop down to Core Data with <code>NSPersistentCloudKitContainer</code>. The data model below is shaped so this swap stays mechanical.
+</div>
+
+<h2 id="data">4. Data model</h2>
+<p>
+SwiftData <code>@Model</code> entities. All entities have a <code>UUID</code> id and timestamps. Relationships use
+cascade delete from parent to children. Sketches below; final names and types may move during implementation.
+</p>
+
+<h3>4.1 <code>Habit</code></h3>
+<pre><code>@Model final class Habit {
+    var id: UUID
+    var name: String
+    var iconName: String           // SF Symbol name or emoji
+    var accentSlot: AccentSlot     // semantic palette slot, not raw hex
+    var goalKind: GoalKind         // .count or .duration
+    var goalTarget: Double         // count units, or seconds
+    var schedule: HabitSchedule    // see 4.2
+    var reminderTime: Date?        // time-of-day for daily nudge
+    var healthBinding: HealthBinding?  // optional auto-fill source
+    var sortOrder: Int
+    var isArchived: Bool
+    var createdAt: Date
+
+    @Relationship(deleteRule: .cascade) var entries: [Entry] = []
+    @Relationship(deleteRule: .cascade) var tasks: [TodoTask] = []
+}</code></pre>
+
+<h3>4.2 <code>HabitSchedule</code> (Codable struct stored on Habit)</h3>
+<pre><code>enum HabitSchedule: Codable {
+    case daily
+    case weekly(weekdays: Set&lt;Weekday&gt;)        // e.g. [.mon, .wed, .fri]
+    case monthly(daysOfMonth: Set&lt;Int&gt;)        // 1...31
+    case flexible(timesPerWeek: Int)           // "3x / week, any days"
+}</code></pre>
+
+<h3>4.3 <code>Entry</code> — one per habit per day</h3>
+<pre><code>@Model final class Entry {
+    var id: UUID
+    var date: Date         // day-aligned (start of local day)
+    var value: Double      // count completed, or seconds completed
+    var note: String?
+    var createdAt: Date
+
+    var habit: Habit?
+    @Relationship(deleteRule: .cascade) var sessions: [TimerSession] = []
+}</code></pre>
+<p class="small">
+A duration habit's <code>Entry.value</code> is the sum of its sessions plus any manual additions.
+A count habit's <code>Entry.value</code> is the integer count.
+</p>
+
+<h3>4.4 <code>TimerSession</code></h3>
+<pre><code>@Model final class TimerSession {
+    var id: UUID
+    var startedAt: Date
+    var endedAt: Date?
+    var pausedAccumulated: TimeInterval   // total time spent paused
+    var entry: Entry?
+}</code></pre>
+<p class="small">
+A session is "active" while <code>endedAt == nil</code>. Only one session may be active app-wide;
+this is enforced at the service layer, not the model.
+</p>
+
+<h3>4.5 <code>TodoTask</code> — Inbox or per-habit task</h3>
+<pre><code>@Model final class TodoTask {
+    var id: UUID
+    var title: String
+    var notes: String?
+    var isDone: Bool
+    var sortOrder: Int
+    var dueDate: Date?               // optional, advisory only
+    var createdAt: Date
+    var completedAt: Date?
+
+    // habit == nil  ⇒  Inbox task
+    // habit != nil  ⇒  scoped to that habit
+    var habit: Habit?
+}</code></pre>
+<p class="small">
+Tasks are <strong>persistent, not day-bound</strong>. A task lives in its container (Inbox or a specific habit) until it is marked done. There is no per-day duplication, no daily rollover logic. The user prunes the list by completing or deleting tasks. Recurring/scheduled tasks are out of scope for v1.0.
+</p>
+<h3>4.6 <code>HealthBinding</code></h3>
+<pre><code>enum HealthBinding: Codable {
+    case steps                   // sum daily step count → Entry.value
+    case activeEnergy            // kcal
+    case workoutDuration         // seconds, any workout type
+    case workoutType(HKWorkoutActivityType)
+    case sleepHours              // hours asleep last night
+    case mindfulMinutes
+}</code></pre>
+
+<h3>4.7 What is <em>not</em> in SwiftData</h3>
+<ul>
+  <li><strong>Themes &amp; preferences:</strong> the active theme, week-start day, etc., live in <code>UserDefaults</code> via <code>@AppStorage</code>. Theme presets themselves are static Swift values (see §6).</li>
+  <li><strong>Live timer state:</strong> the currently running timer is in-memory + persisted lightly to UserDefaults so it survives termination; it is materialized into a <code>TimerSession</code> when stopped.</li>
+</ul>
+
+<h3>4.8 Completion semantics</h3>
+<p>A habit is considered complete <em>for a given day</em> when both of the following hold:</p>
+<ol>
+  <li>The day's <code>Entry.value</code> meets or exceeds <code>Habit.goalTarget</code>.</li>
+  <li>The habit has no incomplete <code>TodoTask</code>s (vacuously true if the habit has no tasks).</li>
+</ol>
+<p class="small">
+Because tasks persist until done (§4.5), an undone task carried from a previous day still blocks "complete" status today — the user must finish it or remove it. This is the intended pressure: open tasks visibly delay the streak.
+</p>
+
+<h2 id="sync">5. Sync &amp; HealthKit</h2>
+<h3>5.1 CloudKit</h3>
+<ul>
+  <li>SwiftData container configured with the CloudKit option pointing at the app's private database.</li>
+  <li>No public/shared scope.</li>
+  <li>Conflict resolution: last-writer-wins (SwiftData default). Document any case where we override this.</li>
+  <li>All <code>@Model</code> properties must be CloudKit-compatible: nullable relationships, no required-non-optional refs, default values for new fields.</li>
+</ul>
+<h3>5.2 HealthKit</h3>
+<ul>
+  <li>Read-only authorization.</li>
+  <li>Types: <code>HKQuantityType</code> for steps / active energy, <code>HKWorkoutType</code>, <code>HKCategoryType.sleepAnalysis</code>, <code>HKCategoryType.mindfulSession</code>.</li>
+  <li>A daily background <code>HKObserverQuery</code> updates today's <code>Entry</code> for habits with a <code>HealthBinding</code>.</li>
+  <li>Manual entries always win over HealthKit auto-fill (track via a <code>source</code> flag if needed).</li>
+</ul>
+
+<h2 id="themes">6. Theme system</h2>
+<p>
+Theme is a value type with semantic slots only — no view ever names a hue. Concrete values can be
+re-tuned later without touching call sites.
+</p>
+
+<h3>6.1 Slots</h3>
+<table>
+  <tr><th>Slot</th><th>Use</th></tr>
+  <tr><td><code>accentPrimary</code></td><td>Main interactive color: buttons, selected state, progress fill.</td></tr>
+  <tr><td><code>accentSecondary</code></td><td>Subtler accent: secondary buttons, today-marker on heatmap.</td></tr>
+  <tr><td><code>backgroundPrimary</code></td><td>App background.</td></tr>
+  <tr><td><code>backgroundSecondary</code></td><td>Card / row background.</td></tr>
+  <tr><td><code>backgroundTertiary</code></td><td>Pressed states, code-block-like surfaces.</td></tr>
+  <tr><td><code>textPrimary</code></td><td>Primary text.</td></tr>
+  <tr><td><code>textSecondary</code></td><td>Secondary text, captions.</td></tr>
+  <tr><td><code>textTertiary</code></td><td>Disabled text, placeholders.</td></tr>
+  <tr><td><code>border</code></td><td>Divider / 1px border.</td></tr>
+  <tr><td><code>success</code> / <code>warning</code> / <code>error</code></td><td>Status colors.</td></tr>
+  <tr><td><code>habitPalette</code></td><td>Ordered list of accent colors used as per-habit color picker (8 slots).</td></tr>
+</table>
+
+<h3>6.2 Sketch</h3>
+<pre><code>struct ThemePalette: Equatable {
+    let id: String
+    let displayName: String
+    // semantic slots
+    let accentPrimary: Color
+    let accentSecondary: Color
+    let backgroundPrimary: Color
+    let backgroundSecondary: Color
+    let backgroundTertiary: Color
+    let textPrimary: Color
+    let textSecondary: Color
+    let textTertiary: Color
+    let border: Color
+    let success: Color
+    let warning: Color
+    let error: Color
+    let habitPalette: [Color]   // exactly 8
+
+    // Each slot resolves differently in light vs dark; ThemePalette.resolved(for:) returns the right one.
+}
+
+private struct ThemeKey: EnvironmentKey {
+    static let defaultValue: ThemePalette = .slate
+}
+
+extension EnvironmentValues {
+    var theme: ThemePalette {
+        get { self[ThemeKey.self] }
+        set { self[ThemeKey.self] = newValue }
+    }
+}</code></pre>
+
+<h3>6.3 Presets (initial draft)</h3>
+<p>
+Concrete colors are placeholders — they are tuned later without touching any view code. Each preset
+ships a light and dark variant for every slot.
+</p>
+<table>
+  <tr><th>Preset</th><th>Mood</th><th>accentPrimary (rough)</th></tr>
+  <tr><td><span class="swatch" style="background:#3a3f47"></span><strong>Slate</strong></td><td>Neutral default</td><td>charcoal / steel</td></tr>
+  <tr><td><span class="swatch" style="background:#4a90e2"></span><strong>Sky</strong></td><td>Calm, focused</td><td>blue / cyan</td></tr>
+  <tr><td><span class="swatch" style="background:#3f8f5d"></span><strong>Forest</strong></td><td>Active, outdoor</td><td>deep green</td></tr>
+  <tr><td><span class="swatch" style="background:#e07a5f"></span><strong>Sunset</strong></td><td>Warm, energetic</td><td>coral / orange</td></tr>
+  <tr><td><span class="swatch" style="background:#8a78d3"></span><strong>Lavender</strong></td><td>Soft, evening</td><td>muted purple</td></tr>
+  <tr><td><span class="swatch" style="background:#c9a979"></span><strong>Sand</strong></td><td>Warm neutral</td><td>warm beige</td></tr>
+</table>
+
+<h3>6.4 Rules of use</h3>
+<ul>
+  <li>Views must read <em>only</em> from <code>@Environment(\.theme)</code>. No <code>Color.blue</code>, no hex literals, no asset-catalog colors named after a hue (<code>"BlueAccent"</code>). Asset-catalog colors are fine if named semantically.</li>
+  <li>Per-habit accents pick an index (<code>0...7</code>) into <code>theme.habitPalette</code>, not a stored RGB.</li>
+  <li>System materials (<code>.regularMaterial</code> etc.) are allowed — they adapt to system appearance and don't fight the theme.</li>
+</ul>
+
+<h2 id="ux">7. UX outline</h2>
+<h4>iOS</h4>
+<ul>
+  <li>Tab bar: <strong>Today</strong> (habits + their tasks for today), <strong>Inbox</strong>, <strong>Stats</strong>, <strong>Settings</strong>.</li>
+  <li>Tap a habit → detail sheet with timer, today's value, task list, notes, history.</li>
+  <li>Long-press a task → drag handle; drop on a habit row in Today, on the Inbox tab, or onto another habit.</li>
+</ul>
+<h4>macOS</h4>
+<ul>
+  <li>NavigationSplitView: sidebar (Today / Inbox / each habit / Stats / Settings), detail pane.</li>
+  <li>Optional menu-bar item showing the active timer (v1.1).</li>
+  <li>Keyboard shortcuts for start/stop timer, new task, mark done.</li>
+</ul>
+<h4>Settings (shared)</h4>
+<ul>
+  <li>Theme picker (6 presets, §6.3).</li>
+  <li><strong>Week start day</strong> — user-configurable. Default reads from the system locale; the user can override (e.g., force Monday). Stats and heatmap respect this setting.</li>
+  <li>HealthKit permissions, notification permissions, iCloud sync status.</li>
+</ul>
+
+<h2 id="roadmap">8. Feature roadmap</h2>
+<table>
+  <tr><th>Feature</th><th>Phase</th></tr>
+  <tr><td>Habit CRUD with count or duration goal</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Daily / weekly / monthly / flexible scheduling</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Per-habit timer with background persistence</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Per-habit task list + global Inbox + drag/drop between</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Streaks, weekly/monthly stats, heatmap</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Local notification reminders</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>iCloud sync (SwiftData + CloudKit)</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>HealthKit auto-fill (steps, energy, workouts, sleep)</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Home + Lock screen widgets (interactive)</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Six theme presets + per-habit accent</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>iOS, iPadOS, macOS</td><td><span class="pill mvp">MVP</span></td></tr>
+  <tr><td>Live Activities + Dynamic Island</td><td><span class="pill v11">v1.1</span></td></tr>
+  <tr><td>Apple Watch app + complications</td><td><span class="pill v11">v1.1</span></td></tr>
+  <tr><td>Vacation mode</td><td><span class="pill v11">v1.1</span></td></tr>
+  <tr><td>CSV / JSON export &amp; import</td><td><span class="pill v11">v1.1</span></td></tr>
+  <tr><td>App Intents / Siri Shortcuts</td><td><span class="pill v11">v1.1</span></td></tr>
+  <tr><td>Apple Intelligence habit suggestions</td><td><span class="pill v11">v1.1</span></td></tr>
+  <tr><td>macOS menu-bar timer</td><td><span class="pill v11">v1.1</span></td></tr>
+</table>
+
+<h2 id="structure">9. Project structure</h2>
+<p class="small">
+The repo directory stays <code>app_for_fun</code>. The Xcode project, app target, and bundle id all use the name <strong>Tally</strong>.
+</p>
+<pre><code>app_for_fun/                   ← repo root (unchanged)
+├─ docs/
+│  └─ design.html              ← this file
+├─ Tally.xcodeproj/
+├─ Tally/                      ← app target source
+│  ├─ App/
+│  │  ├─ TallyApp.swift        ← @main, scene + container setup
+│  │  └─ ContentView.swift
+│  ├─ Models/                  ← SwiftData @Model types
+│  │  ├─ Habit.swift
+│  │  ├─ Entry.swift
+│  │  ├─ TimerSession.swift
+│  │  ├─ TodoTask.swift
+│  │  └─ Schedules.swift       ← HabitSchedule, GoalKind, HealthBinding
+│  ├─ Theme/
+│  │  ├─ ThemePalette.swift
+│  │  ├─ ThemeEnvironment.swift
+│  │  └─ Presets/              ← Slate, Sky, Forest, Sunset, Lavender, Sand
+│  ├─ Services/
+│  │  ├─ TimerService.swift    ← single-active-session invariant
+│  │  ├─ HealthKitService.swift
+│  │  ├─ NotificationService.swift
+│  │  └─ HabitStore.swift      ← thin facade over SwiftData
+│  ├─ Views/
+│  │  ├─ Today/
+│  │  ├─ Inbox/
+│  │  ├─ HabitDetail/
+│  │  ├─ Stats/
+│  │  └─ Settings/
+│  └─ Resources/
+│     └─ Assets.xcassets       ← icons only; no hue-named colors
+└─ TallyWidgets/                ← widget extension target
+</code></pre>
+
+<h2 id="open">10. Resolved decisions</h2>
+<table>
+  <tr><th>#</th><th>Question</th><th>Decision</th></tr>
+  <tr>
+    <td>1</td>
+    <td>App name</td>
+    <td><strong>Tally</strong>. Used as Xcode target, bundle id (TBD final reverse-DNS), and marketing name. Repo dir stays <code>app_for_fun</code>.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Task lifecycle</td>
+    <td>Tasks <strong>persist in their container</strong> (Inbox or a habit) until marked done. No daily duplication, no rollover field — they simply stay until completed. (See §4.5.)</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Habit completion</td>
+    <td>A habit is complete for the day when goal value is met <strong>and</strong> there are no incomplete tasks attached to it. (See §4.8.)</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Concurrent timers</td>
+    <td><strong>Single active timer</strong> app-wide. Starting a new one stops the previous. Enforced by <code>TimerService</code>.</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Inbox → habit drag</td>
+    <td><strong>Move</strong>, not copy. A task has exactly one container at any time.</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Week start day</td>
+    <td><strong>User-configurable</strong>. Default reads system locale; surfaced in Settings. Stats &amp; heatmap respect the setting.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="small">
+v0.2 — all v0.1 questions resolved. Update this file in place as further decisions land.
+</p>
+
+</body>
+</html>

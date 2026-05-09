@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tally — MVP Implementation Plan (v0.1)</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f6f7f9;
+    --bg-code: #f0f2f5;
+    --fg: #1c1f24;
+    --fg-soft: #555a63;
+    --fg-faint: #8a909a;
+    --accent: #4a6cf7;
+    --accent-soft: #e7ecfe;
+    --border: #e3e6eb;
+    --warn: #b15a00;
+    --ok: #1f7a3a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171c;
+      --bg-soft: #1d2027;
+      --bg-code: #1a1d24;
+      --fg: #e6e8ec;
+      --fg-soft: #a8acb6;
+      --fg-faint: #6c717c;
+      --accent: #8ba4ff;
+      --accent-soft: #25304f;
+      --border: #2a2e37;
+      --warn: #e0a35f;
+      --ok: #6ec890;
+    }
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 6rem;
+    font-size: 16px;
+  }
+  h1, h2, h3 { line-height: 1.25; font-weight: 600; }
+  h1 { font-size: 2rem; margin: 0 0 0.25rem; }
+  h2 { font-size: 1.4rem; margin: 2.5rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 0.4rem; display: flex; align-items: center; gap: 0.6rem; }
+  p, ul, ol { margin: 0.6rem 0; }
+  a { color: var(--accent); }
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    background: var(--bg-code);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+  }
+  .meta { color: var(--fg-faint); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .callout {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 0.7rem 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+  }
+  .toc { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1.2rem; margin: 1.2rem 0 2rem; }
+  .toc ol { margin: 0.4rem 0; padding-left: 1.4rem; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; font-size: 0.94rem; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 600; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.4em;
+    height: 1.7em;
+    padding: 0 0.6em;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.85em;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .milestone {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.4rem 1.1rem 1rem;
+    margin: 1rem 0;
+    background: var(--bg);
+  }
+  .milestone h3 { margin-top: 0.9rem; }
+  .label {
+    display: inline-block;
+    color: var(--fg-soft);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.6rem;
+    margin-bottom: 0.1rem;
+  }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+  .small { color: var(--fg-soft); font-size: 0.92rem; }
+</style>
+</head>
+<body>
+
+<h1>Tally — MVP Implementation Plan</h1>
+<div class="meta">v0.1 &middot; 2026-05-09 &middot; companion to <a href="design.html">design.html</a></div>
+
+<div class="callout">
+  <strong>Working assumption:</strong> code authoring, design, and docs happen in this dev environment. Build, run, and on-device validation happen on the user's Mac in Xcode. Each milestone ends with the user installing the build on iPhone + Mac and confirming the validation step. No timelines are given — sequencing and dependencies only.
+</div>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#how">How to read this plan</a></li>
+    <li><a href="#glance">Milestones at a glance</a></li>
+    <li><a href="#m0">M0 — Project bootstrap &amp; sync smoke test</a></li>
+    <li><a href="#m1">M1 — Data model &amp; habit CRUD</a></li>
+    <li><a href="#m2">M2 — Today view, entries, single timer</a></li>
+    <li><a href="#m3">M3 — Tasks, Inbox, drag &amp; drop</a></li>
+    <li><a href="#m4">M4 — Stats, heatmap, streaks</a></li>
+    <li><a href="#m5">M5 — HealthKit auto-fill</a></li>
+    <li><a href="#m6">M6 — Reminders &amp; notifications</a></li>
+    <li><a href="#m7">M7 — Theme presets &amp; per-habit accent</a></li>
+    <li><a href="#m8">M8 — macOS polish</a></li>
+    <li><a href="#m9">M9 — Widgets</a></li>
+    <li><a href="#m10">M10 — Personal deploy &amp; dogfood</a></li>
+    <li><a href="#cross">Cross-cutting checks</a></li>
+    <li><a href="#deferred">Out of MVP scope</a></li>
+  </ol>
+</div>
+
+<h2 id="how">1. How to read this plan</h2>
+<ul>
+  <li><strong>Sequenced by dependency</strong>, not calendar. Earlier milestones unblock later ones.</li>
+  <li>Each milestone ends with a concrete <strong>validation step</strong> the user runs on real devices.</li>
+  <li>Stop and dogfood whenever it's useful — most milestones are independently shippable to your own phone.</li>
+  <li>Two principles run through every milestone (see §14): <em>no hardcoded colors</em>, and <em>verify CloudKit sync after any model change</em>.</li>
+</ul>
+
+<h2 id="glance">2. Milestones at a glance</h2>
+<table>
+  <tr><th>#</th><th>Milestone</th><th>Why this position</th></tr>
+  <tr><td><span class="badge">M0</span></td><td>Project bootstrap &amp; sync smoke test</td><td>De-risk CloudKit + SwiftData first; everything depends on it.</td></tr>
+  <tr><td><span class="badge">M1</span></td><td>Data model &amp; habit CRUD</td><td>The domain has to exist before any feature can use it.</td></tr>
+  <tr><td><span class="badge">M2</span></td><td>Today view, entries, single timer</td><td>Smallest end-to-end loop: track a habit and complete it.</td></tr>
+  <tr><td><span class="badge">M3</span></td><td>Tasks, Inbox, drag &amp; drop</td><td>The differentiating feature. Needs habits + Today first.</td></tr>
+  <tr><td><span class="badge">M4</span></td><td>Stats, heatmap, streaks</td><td>Needs accumulated <code>Entry</code> data — easier once M2 has produced some.</td></tr>
+  <tr><td><span class="badge">M5</span></td><td>HealthKit auto-fill</td><td>Self-contained; can slot in once Habit + Entry exist.</td></tr>
+  <tr><td><span class="badge">M6</span></td><td>Reminders &amp; notifications</td><td>Needs Habit; otherwise independent.</td></tr>
+  <tr><td><span class="badge">M7</span></td><td>Theme presets &amp; per-habit accent</td><td>Theme infrastructure is built in M0, but the full preset set lands here.</td></tr>
+  <tr><td><span class="badge">M8</span></td><td>macOS polish</td><td>Easier to fix Mac quirks once iOS is stable.</td></tr>
+  <tr><td><span class="badge">M9</span></td><td>Widgets</td><td>Needs interactive read paths and App Intents — done last among features.</td></tr>
+  <tr><td><span class="badge">M10</span></td><td>Personal deploy &amp; dogfood</td><td>Replace Awesome Habits, surface the real bugs.</td></tr>
+</table>
+
+<div class="milestone">
+<h3 id="m0"><span class="badge">M0</span> Project bootstrap &amp; sync smoke test</h3>
+<p>Stand up a multiplatform Xcode project and prove SwiftData + CloudKit round-trip works before any real domain code exists.</p>
+<div class="label">Deliverables</div>
+<ul>
+  <li>Xcode project <code>Tally.xcodeproj</code> with multiplatform <code>Tally</code> target (iOS 18 / macOS 15).</li>
+  <li>Bundle id, dev team set; signing works on user's Apple Developer account.</li>
+  <li>Capabilities: iCloud (CloudKit), HealthKit, Push (background notifications, needed for sync wake-ups), App Groups (for the future widget extension).</li>
+  <li>SwiftData container configured with CloudKit option, pointing at the private database.</li>
+  <li>One placeholder <code>@Model</code> (e.g., <code>Ping</code> with a date + label) and a one-screen view that adds a row.</li>
+  <li>Theme infrastructure stub: <code>ThemePalette</code> type, <code>Environment</code> key, one preset (<code>Slate</code>). All view code reads colors via the environment from day one.</li>
+  <li>Folder layout per <a href="design.html#structure">design §9</a>.</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Add a <code>Ping</code> on iPhone → it appears on Mac within ~30s.</li>
+  <li>Delete on Mac → it disappears on iPhone.</li>
+  <li>Theme background applied via environment, not hex literals.</li>
+</ul>
+<div class="label">Risks</div>
+<ul>
+  <li>CloudKit signing/entitlement misconfiguration is the most common stall point — get past it here, not later.</li>
+  <li>If SwiftData behaves badly with sync at this stage, fall back to <code>NSPersistentCloudKitContainer</code> (decision logged in design §3).</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m1"><span class="badge">M1</span> Data model &amp; habit CRUD</h3>
+<p>Replace the placeholder model with the real schema and let the user create / edit / archive habits.</p>
+<div class="label">Deliverables</div>
+<ul>
+  <li><code>Habit</code>, <code>Entry</code>, <code>TimerSession</code>, <code>TodoTask</code>, plus <code>HabitSchedule</code>, <code>GoalKind</code>, <code>HealthBinding</code> (per design §4).</li>
+  <li><code>HabitStore</code> facade for create/update/archive/delete operations.</li>
+  <li>Habit list view (basic styling, sorted by <code>sortOrder</code>).</li>
+  <li>Create/edit habit form: name, icon (SF Symbol picker for now, emojis later), accent slot (one of <code>habitPalette</code>'s 8), goal kind + target, schedule, optional reminder time, optional <code>HealthBinding</code>.</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Create 3 habits with different goals + schedules on iPhone; all appear on Mac.</li>
+  <li>Edit a habit's name on Mac; change reflects on iPhone.</li>
+  <li>Archive a habit; it disappears from the active list on both platforms.</li>
+</ul>
+<div class="label">Risks</div>
+<ul>
+  <li>SwiftData's CloudKit constraints: every relationship must be optional, every property needs a default. Caught early by trying real data.</li>
+  <li>Schema migration: if anything changes after this milestone, plan a versioned migration before shipping to your own device.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m2"><span class="badge">M2</span> Today view, entries, single timer</h3>
+<p>Smallest useful loop: see today's habits, log progress, run a timer.</p>
+<div class="label">Deliverables</div>
+<ul>
+  <li>Today view: lists habits whose schedule includes today, with progress ring and current value vs goal.</li>
+  <li>Tap a count habit → +1 (and -1 / set value via long-press).</li>
+  <li>Tap a duration habit → start/stop timer.</li>
+  <li><code>TimerService</code> enforcing single-active-session invariant; survives app backgrounding and termination (state in UserDefaults).</li>
+  <li>Manual entry edit (correct yesterday's value, etc.).</li>
+  <li>Habit detail view: today's value, history list, notes field on <code>Entry</code>.</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Start a timer, lock the phone for 5 minutes, return — elapsed time accurate.</li>
+  <li>Start timer A, then start timer B → A stops automatically with its session saved.</li>
+  <li>Edit yesterday's <code>Entry</code> from the detail view; sync round-trips to Mac.</li>
+</ul>
+<div class="label">Risks</div>
+<ul>
+  <li>Background timer accuracy: don't try to keep a real timer running. Persist <code>startedAt</code> + paused intervals; compute elapsed on the fly.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m3"><span class="badge">M3</span> Tasks, Inbox, drag &amp; drop</h3>
+<p>The differentiating feature. After this, the app is meaningfully better than Awesome Habits for the user.</p>
+<div class="label">Deliverables</div>
+<ul>
+  <li>Inbox tab + per-habit task list inside the habit detail view.</li>
+  <li>Task CRUD (title, optional notes, optional due date).</li>
+  <li>Drag tasks between Inbox ↔ habit, and habit ↔ habit, using SwiftUI <code>.draggable</code>/<code>.dropDestination</code>. Move semantics, not copy.</li>
+  <li>Apply <a href="design.html#open">design §10 #3</a> completion rule: a habit is complete only when goal value met <em>and</em> all attached tasks are done.</li>
+  <li>Today view shows the count of open tasks per habit.</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Drop an Inbox task onto a habit row → task moves; Inbox no longer shows it.</li>
+  <li>Hit goal but leave one task open → habit shows "in progress", not complete.</li>
+  <li>Reorder tasks within a habit; order syncs to Mac.</li>
+</ul>
+<div class="label">Risks</div>
+<ul>
+  <li>Drag &amp; drop on iOS vs macOS has small behavioral differences (long-press vs immediate). Test both.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m4"><span class="badge">M4</span> Stats, heatmap, streaks</h3>
+<p>Visualize accumulated data. By now you have weeks of real entries from dogfooding M2/M3.</p>
+<div class="label">Deliverables</div>
+<ul>
+  <li>Per-habit heatmap (12 weeks default; year view on iPad/Mac).</li>
+  <li>Current streak + longest streak (respecting flexible schedules — a "skipped, not failed" day breaks vs. tolerates depending on schedule kind).</li>
+  <li>Weekly &amp; monthly summary (target hit rate, total time / count).</li>
+  <li>Stats tab aggregates across habits.</li>
+  <li>Settings → user-configurable week start day (default from system locale).</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Back-date a few entries; heatmap reflects them on both platforms.</li>
+  <li>Change week start; heatmap and weekly summary realign.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m5"><span class="badge">M5</span> HealthKit auto-fill</h3>
+<p>Habits with a <code>HealthBinding</code> pull from HealthKit instead of needing manual entry.</p>
+<div class="label">Deliverables</div>
+<ul>
+  <li><code>NSHealthShareUsageDescription</code> in Info.plist.</li>
+  <li>Read-only authorization flow during habit setup if a <code>HealthBinding</code> is selected.</li>
+  <li><code>HealthKitService</code> running an <code>HKObserverQuery</code> per active binding; updates today's <code>Entry</code> in the background.</li>
+  <li>Manual entry overrides HealthKit value (track via a <code>source</code> flag if needed).</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Create a "10k steps" habit bound to <code>steps</code>. Walk a bit. Today's value updates without opening the app (re-open and confirm).</li>
+  <li>Manually set today's value to 12000; HealthKit re-emit doesn't overwrite it.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m6"><span class="badge">M6</span> Reminders &amp; notifications</h3>
+<div class="label">Deliverables</div>
+<ul>
+  <li>Per-habit <code>reminderTime</code> → <code>UNNotificationRequest</code> scheduled with a calendar trigger that respects the habit's schedule.</li>
+  <li>Permission request on first habit-with-reminder.</li>
+  <li><code>NotificationService</code> reschedules all reminders on app launch and after habit edits.</li>
+  <li>Optional: notification body shows progress ("Workout — 0 / 60 min today").</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Set reminder to 1 minute from now on a daily habit; notification fires.</li>
+  <li>Edit reminder time; old notification gone, new one scheduled.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m7"><span class="badge">M7</span> Theme presets &amp; per-habit accent</h3>
+<p>Six full themes. Theme infrastructure already exists from M0, so this is mostly tuning.</p>
+<div class="label">Deliverables</div>
+<ul>
+  <li>Six <code>ThemePalette</code> presets: Slate, Sky, Forest, Sunset, Lavender, Sand. Each with light + dark variants for every slot.</li>
+  <li>Per-preset 8-slot <code>habitPalette</code> for habit accent picker.</li>
+  <li>Settings → theme picker with live preview.</li>
+  <li>Audit pass: <code>grep</code> for <code>Color.</code>, hex literals, and asset-catalog hue names; replace anything that slipped through.</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Switch themes in Settings; entire UI (including widgets if M9 is done) updates without restart.</li>
+  <li>All six themes legible in light + dark, with WCAG AA-ish contrast on text and accents.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m8"><span class="badge">M8</span> macOS polish</h3>
+<div class="label">Deliverables</div>
+<ul>
+  <li><code>NavigationSplitView</code> sidebar (Today / Inbox / each habit / Stats / Settings).</li>
+  <li>Keyboard shortcuts: <code>⌘N</code> new habit, <code>⌘T</code> new task, <code>Space</code> start/stop timer on focused habit.</li>
+  <li>Window restoration; minimum window size; sensible default sizes.</li>
+  <li>iPadOS sanity pass (split view, regular vs compact size classes).</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Use the Mac app for a full day without the phone; nothing feels like a literal iOS port.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m9"><span class="badge">M9</span> Widgets</h3>
+<div class="label">Deliverables</div>
+<ul>
+  <li><code>TallyWidgets</code> widget extension target.</li>
+  <li>App Group for shared SwiftData store access between app and widget.</li>
+  <li>Lock-screen widget: today's primary habit progress (rectangular + circular).</li>
+  <li>Home-screen widget: small/medium grid of habits with interactive complete buttons via <code>AppIntent</code>.</li>
+  <li>Widget timeline reload on habit/entry changes.</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>Tap a habit complete in a Home-screen widget; main app reflects it on next open and Mac sees it shortly after.</li>
+  <li>Lock-screen widget shows up-to-date progress without launching the app.</li>
+</ul>
+</div>
+
+<div class="milestone">
+<h3 id="m10"><span class="badge">M10</span> Personal deploy &amp; dogfood</h3>
+<div class="label">Deliverables</div>
+<ul>
+  <li>Sign &amp; install on user's iPhone, iPad, Mac via developer account (TestFlight optional).</li>
+  <li>Disable Awesome Habits notifications. Switch over to Tally.</li>
+  <li>Two weeks of daily use; log issues to <code>docs/dogfood-log.html</code>.</li>
+  <li>Decide: address surfaced bugs in a <strong>v1.0.x polish pass</strong>, or push toward v1.1 features (Watch, Live Activities, etc.).</li>
+</ul>
+<div class="label">Validation</div>
+<ul>
+  <li>You stop reflexively opening Awesome Habits.</li>
+</ul>
+</div>
+
+<h2 id="cross">14. Cross-cutting checks (run every milestone)</h2>
+<ul>
+  <li><strong>No hardcoded colors:</strong> <code>grep -rn 'Color\.\|#[0-9a-fA-F]\{3,6\}' Tally/Views</code> should turn up nothing meaningful. Per-habit accents reference <code>theme.habitPalette[i]</code>, not raw hex.</li>
+  <li><strong>Sync round-trip:</strong> after any <code>@Model</code> change, install on iPhone + Mac and verify create / edit / delete propagates. Watch for "schema mismatch" errors after migrations.</li>
+  <li><strong>Both platforms:</strong> every UI feature gets at least a smoke test on iOS and macOS.</li>
+  <li><strong>Privacy strings:</strong> any new system permission needs a usage description in Info.plist before the prompt fires.</li>
+  <li><strong>Design doc currency:</strong> if a milestone changes a §4 model, update <code>design.html</code> in place.</li>
+</ul>
+
+<h2 id="deferred">15. Out of MVP scope (deferred to v1.1+)</h2>
+<ul>
+  <li>Apple Watch app + complications</li>
+  <li>Live Activities + Dynamic Island timer</li>
+  <li>Vacation mode</li>
+  <li>CSV / JSON export &amp; import</li>
+  <li>App Intents / Siri Shortcuts beyond what M9 needs</li>
+  <li>Apple Intelligence habit suggestions</li>
+  <li>macOS menu-bar timer</li>
+  <li>Recurring/scheduled tasks (today, tasks just persist)</li>
+  <li>Sharing / collaboration</li>
+</ul>
+
+<hr>
+<p class="small">v0.1 — update this file in place as milestones complete or sequencing changes. After each milestone, append a one-line note (date, what shipped, what surprised you) so future-you and future-Claude can see the trajectory.</p>
+
+</body>
+</html>
