@@ -6,7 +6,7 @@ struct HabitFormView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.theme) private var theme
 
-    /// nil = creating a new habit; non-nil = editing.
+    /// nil = creating; non-nil = editing.
     let habit: Habit?
 
     @State private var name: String = ""
@@ -41,27 +41,35 @@ struct HabitFormView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                BasicsSection(
-                    name: $name,
-                    iconName: $iconName,
-                    accentSlot: $accentSlot,
-                    nameFocused: $nameFocused,
-                    palette: theme.habitPalette
-                )
-                GoalSection(
-                    goalKind: $goalKind,
-                    countTarget: $countTarget,
-                    durationMinutes: $durationMinutes
-                )
-                ScheduleSection(
-                    scheduleKind: $scheduleKind,
-                    weeklyDays: $weeklyDays,
-                    monthlyDays: $monthlyDays,
-                    flexibleTimes: $flexibleTimes
-                )
-                ReminderSection(hasReminder: $hasReminder, reminderTime: $reminderTime)
-                HealthSection(binding: $healthBinding)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    BasicsBlock(
+                        name: $name,
+                        iconName: $iconName,
+                        accentSlot: $accentSlot,
+                        nameFocused: $nameFocused,
+                        palette: theme.habitPalette
+                    )
+                    Divider()
+                    GoalBlock(
+                        goalKind: $goalKind,
+                        countTarget: $countTarget,
+                        durationMinutes: $durationMinutes
+                    )
+                    Divider()
+                    ScheduleBlock(
+                        scheduleKind: $scheduleKind,
+                        weeklyDays: $weeklyDays,
+                        monthlyDays: $monthlyDays,
+                        flexibleTimes: $flexibleTimes
+                    )
+                    Divider()
+                    ReminderBlock(hasReminder: $hasReminder, reminderTime: $reminderTime)
+                    Divider()
+                    HealthBlock(binding: $healthBinding)
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .navigationTitle(habit == nil ? "New Habit" : "Edit Habit")
             #if os(iOS)
@@ -79,6 +87,9 @@ struct HabitFormView: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 480, minHeight: 640)
+        #endif
         .onAppear {
             if !didLoad {
                 loadFromHabit()
@@ -86,9 +97,6 @@ struct HabitFormView: View {
             }
         }
         .task {
-            // Wait for the sheet's presentation animation to settle before
-            // focusing — focus set during the appear transition is sometimes
-            // dropped by SwiftUI.
             try? await Task.sleep(for: .milliseconds(200))
             if habit == nil { nameFocused = true }
         }
@@ -172,9 +180,19 @@ struct HabitFormView: View {
     }
 }
 
-// MARK: - Sections
+// MARK: - Blocks
 
-private struct BasicsSection: View {
+private struct BlockHeader: View {
+    let title: String
+    init(_ title: String) { self.title = title }
+    var body: some View {
+        Text(title)
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(.primary)
+    }
+}
+
+private struct BasicsBlock: View {
     @Binding var name: String
     @Binding var iconName: String
     @Binding var accentSlot: Int
@@ -182,28 +200,37 @@ private struct BasicsSection: View {
     let palette: [Color]
 
     var body: some View {
-        Section("Basics") {
-            TextField("Name", text: $name)
-                .focused($nameFocused)
-                .textFieldStyle(.roundedBorder)
+        VStack(alignment: .leading, spacing: 14) {
+            BlockHeader("Basics")
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Name")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                TextField("e.g. Workout, Read", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .foregroundStyle(.primary)
+                    .focused($nameFocused)
+            }
             IconPicker(selected: $iconName)
             AccentPicker(selected: $accentSlot, palette: palette)
         }
     }
 }
 
-private struct GoalSection: View {
+private struct GoalBlock: View {
     @Binding var goalKind: GoalKind
     @Binding var countTarget: Int
     @Binding var durationMinutes: Int
 
     var body: some View {
-        Section("Goal") {
+        VStack(alignment: .leading, spacing: 14) {
+            BlockHeader("Goal")
             Picker("Kind", selection: $goalKind) {
                 Text("Count").tag(GoalKind.count)
                 Text("Duration").tag(GoalKind.duration)
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
 
             switch goalKind {
             case .count:
@@ -233,19 +260,22 @@ private struct GoalSection: View {
     }
 }
 
-private struct ScheduleSection: View {
+private struct ScheduleBlock: View {
     @Binding var scheduleKind: HabitFormView.ScheduleKind
     @Binding var weeklyDays: Set<Weekday>
     @Binding var monthlyDays: Set<Int>
     @Binding var flexibleTimes: Int
 
     var body: some View {
-        Section("Schedule") {
+        VStack(alignment: .leading, spacing: 14) {
+            BlockHeader("Schedule")
             Picker("Repeat", selection: $scheduleKind) {
                 ForEach(HabitFormView.ScheduleKind.allCases) { k in
                     Text(k.displayName).tag(k)
                 }
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
 
             switch scheduleKind {
             case .daily:
@@ -263,6 +293,40 @@ private struct ScheduleSection: View {
                     }
                 }
             }
+        }
+    }
+}
+
+private struct ReminderBlock: View {
+    @Binding var hasReminder: Bool
+    @Binding var reminderTime: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            BlockHeader("Reminder")
+            Toggle("Daily reminder", isOn: $hasReminder)
+            if hasReminder {
+                DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+            }
+        }
+    }
+}
+
+private struct HealthBlock: View {
+    @Binding var binding: HealthBinding?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            BlockHeader("Health Auto-Fill")
+            Picker("Source", selection: $binding) {
+                Text("None").tag(nil as HealthBinding?)
+                Text("Steps").tag(HealthBinding.steps as HealthBinding?)
+                Text("Active Energy").tag(HealthBinding.activeEnergy as HealthBinding?)
+                Text("Workouts").tag(HealthBinding.workoutDuration as HealthBinding?)
+                Text("Sleep").tag(HealthBinding.sleepHours as HealthBinding?)
+                Text("Mindful Minutes").tag(HealthBinding.mindfulMinutes as HealthBinding?)
+            }
+            .pickerStyle(.menu)
         }
     }
 }
@@ -288,7 +352,6 @@ private struct WeekdayPicker: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -315,38 +378,6 @@ private struct MonthDayPicker: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.vertical, 4)
-    }
-}
-
-private struct ReminderSection: View {
-    @Binding var hasReminder: Bool
-    @Binding var reminderTime: Date
-
-    var body: some View {
-        Section("Reminder") {
-            Toggle("Daily reminder", isOn: $hasReminder)
-            if hasReminder {
-                DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
-            }
-        }
-    }
-}
-
-private struct HealthSection: View {
-    @Binding var binding: HealthBinding?
-
-    var body: some View {
-        Section("Health Auto-Fill") {
-            Picker("Source", selection: $binding) {
-                Text("None").tag(nil as HealthBinding?)
-                Text("Steps").tag(HealthBinding.steps as HealthBinding?)
-                Text("Active Energy").tag(HealthBinding.activeEnergy as HealthBinding?)
-                Text("Workouts").tag(HealthBinding.workoutDuration as HealthBinding?)
-                Text("Sleep").tag(HealthBinding.sleepHours as HealthBinding?)
-                Text("Mindful Minutes").tag(HealthBinding.mindfulMinutes as HealthBinding?)
-            }
-        }
     }
 }
 
@@ -367,8 +398,8 @@ private struct IconPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Icon")
-                .foregroundStyle(theme.textSecondary)
                 .font(.subheadline)
+                .foregroundStyle(.secondary)
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(icons, id: \.self) { icon in
                     let on = selected == icon
@@ -386,7 +417,6 @@ private struct IconPicker: View {
                 }
             }
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -398,8 +428,8 @@ private struct AccentPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Color")
-                .foregroundStyle(theme.textSecondary)
                 .font(.subheadline)
+                .foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 ForEach(0..<palette.count, id: \.self) { i in
                     Button {
@@ -420,6 +450,5 @@ private struct AccentPicker: View {
                 }
             }
         }
-        .padding(.vertical, 4)
     }
 }
