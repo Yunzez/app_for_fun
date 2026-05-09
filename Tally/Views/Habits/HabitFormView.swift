@@ -185,6 +185,7 @@ private struct BasicsSection: View {
         Section("Basics") {
             TextField("Name", text: $name)
                 .focused($nameFocused)
+                .textFieldStyle(.roundedBorder)
             IconPicker(selected: $iconName)
             AccentPicker(selected: $accentSlot, palette: palette)
         }

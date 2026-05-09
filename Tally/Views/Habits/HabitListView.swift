@@ -40,6 +40,18 @@ struct HabitListView: View {
                             .onTapGesture {
                                 formMode = .edit(habit)
                             }
+                            .contextMenu {
+                                Button {
+                                    archive(habit)
+                                } label: {
+                                    Label("Archive", systemImage: "archivebox")
+                                }
+                                Button(role: .destructive) {
+                                    delete(habit)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                             .swipeActions(edge: .trailing) {
                                 Button {
                                     archive(habit)
@@ -82,6 +94,10 @@ struct HabitListView: View {
 
     private func archive(_ habit: Habit) {
         HabitStore(context: context).archive(habit)
+    }
+
+    private func delete(_ habit: Habit) {
+        HabitStore(context: context).delete(habit)
     }
 
     private func move(from offsets: IndexSet, to destination: Int) {
