@@ -1,12 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(\.theme) private var theme
-
     var body: some View {
         HabitListView()
-            .background(theme.backgroundPrimary.ignoresSafeArea())
-            .foregroundStyle(theme.textPrimary)
     }
 }
 

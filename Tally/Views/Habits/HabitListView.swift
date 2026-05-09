@@ -31,13 +31,11 @@ struct HabitListView: View {
                 if habits.isEmpty {
                     Section {
                         Text("No habits yet. Tap + to add your first one.")
-                            .foregroundStyle(theme.textSecondary)
-                            .listRowBackground(theme.backgroundSecondary)
+                            .foregroundStyle(.secondary)
                     }
                 } else {
                     ForEach(habits) { habit in
                         HabitRow(habit: habit)
-                            .listRowBackground(theme.backgroundSecondary)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 formMode = .edit(habit)
@@ -54,8 +52,6 @@ struct HabitListView: View {
                     .onMove(perform: move)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(theme.backgroundPrimary)
             .navigationTitle("Habits")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {

@@ -23,10 +23,9 @@ struct HabitRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
-                    .foregroundStyle(theme.textPrimary)
                     .font(.body)
                 Text(subtitle)
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(.secondary)
                     .font(.caption)
             }
 
