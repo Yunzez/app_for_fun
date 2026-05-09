@@ -12,6 +12,9 @@ struct TodayView: View {
     )
     private var allHabits: [Habit]
 
+    @State private var showCreateForm: Bool = false
+    @State private var showAllHabits: Bool = false
+
     private var todaysHabits: [Habit] {
         allHabits.filter { $0.schedule.isScheduled(on: .now) }
     }
@@ -45,6 +48,28 @@ struct TodayView: View {
                 }
             }
             .navigationTitle("Today")
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        showAllHabits = true
+                    } label: {
+                        Label("All Habits", systemImage: "list.bullet")
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showCreateForm = true
+                    } label: {
+                        Label("New Habit", systemImage: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showCreateForm) {
+                HabitFormView(habit: nil)
+            }
+            .sheet(isPresented: $showAllHabits) {
+                HabitListView(dismissable: true)
+            }
         }
     }
 

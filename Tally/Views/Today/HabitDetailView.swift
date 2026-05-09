@@ -3,6 +3,7 @@ import SwiftData
 
 struct HabitDetailView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     @Environment(TimerService.self) private var timer
     @Environment(\.theme) private var theme
 
@@ -10,6 +11,8 @@ struct HabitDetailView: View {
 
     @State private var noteDraft: String = ""
     @State private var didLoadNote: Bool = false
+    @State private var editPresented: Bool = false
+    @State private var deleteConfirmation: Bool = false
 
     private var todayEntry: Entry? {
         habit.entries.first { Calendar.current.isDate($0.date, inSameDayAs: .now) }
@@ -28,6 +31,8 @@ struct HabitDetailView: View {
                 Divider()
                 progressSection
                 Divider()
+                HabitTaskSection(habit: habit)
+                Divider()
                 notesSection
                 Divider()
                 historySection
@@ -42,6 +47,42 @@ struct HabitDetailView: View {
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 600)
         #endif
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button {
+                    editPresented = true
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                Menu {
+                    Button {
+                        HabitStore(context: context).archive(habit)
+                        dismiss()
+                    } label: {
+                        Label("Archive", systemImage: "archivebox")
+                    }
+                    Button(role: .destructive) {
+                        deleteConfirmation = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $editPresented) {
+            HabitFormView(habit: habit)
+        }
+        .alert("Delete this habit?", isPresented: $deleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                HabitStore(context: context).delete(habit)
+                dismiss()
+            }
+        } message: {
+            Text("All entries, sessions, and tasks will be removed. This can't be undone.")
+        }
         .onAppear {
             if !didLoadNote {
                 noteDraft = todayEntry?.note ?? ""

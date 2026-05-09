@@ -19,10 +19,14 @@ struct TodayHabitRow: View {
         return min(1, bankedValue / habit.goalTarget)
     }
 
-    /// Goal-met flag. M3 will also require all attached tasks be done
-    /// (per design.html §4.8); for now this is goal-only.
+    private var openTasksCount: Int {
+        habit.tasks.filter { !$0.isDone }.count
+    }
+
+    /// A habit is complete when its goal is met *and* no attached tasks are
+    /// still open (design.html §4.8).
     private var isComplete: Bool {
-        bankedValue >= habit.goalTarget
+        bankedValue >= habit.goalTarget && openTasksCount == 0
     }
 
     private var accent: Color {
@@ -55,9 +59,14 @@ struct TodayHabitRow: View {
                             .font(.caption)
                     }
                 }
-                Text(progressText)
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
+                HStack(spacing: 4) {
+                    Text(progressText)
+                    if openTasksCount > 0 {
+                        Text("· \(openTasksCount) open task\(openTasksCount == 1 ? "" : "s")")
+                    }
+                }
+                .foregroundStyle(.secondary)
+                .font(.caption)
             }
 
             Spacer()

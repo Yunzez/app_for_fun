@@ -90,6 +90,41 @@ struct HabitStore {
         entry.note = (trimmed?.isEmpty ?? true) ? nil : trimmed
     }
 
+    // MARK: - Tasks
+
+    /// Create a task. `habit == nil` puts it in the Inbox.
+    @discardableResult
+    func createTask(in habit: Habit?, title: String) -> TodoTask {
+        let nextSort = (try? maxTaskSortOrder(in: habit) + 1) ?? 0
+        let task = TodoTask(title: title, habit: habit, sortOrder: nextSort)
+        context.insert(task)
+        return task
+    }
+
+    func delete(_ task: TodoTask) {
+        context.delete(task)
+    }
+
+    func toggleDone(_ task: TodoTask) {
+        task.isDone.toggle()
+        task.completedAt = task.isDone ? .now : nil
+    }
+
+    /// Move a task to a different container. `habit == nil` moves it to the Inbox.
+    /// Per design §10 #5, this is a *move*: a task has exactly one container.
+    func move(_ task: TodoTask, toHabit habit: Habit?) {
+        task.habit = habit
+        let nextSort = (try? maxTaskSortOrder(in: habit) + 1) ?? 0
+        task.sortOrder = nextSort
+    }
+
+    /// Reorder a list of tasks. Sets `sortOrder` to match array order.
+    func reorderTasks(_ tasks: [TodoTask]) {
+        for (index, task) in tasks.enumerated() {
+            task.sortOrder = index
+        }
+    }
+
     // MARK: - Internals
 
     private func maxSortOrder() throws -> Int {
@@ -99,5 +134,16 @@ struct HabitStore {
         descriptor.fetchLimit = 1
         let result = try context.fetch(descriptor)
         return result.first?.sortOrder ?? -1
+    }
+
+    private func maxTaskSortOrder(in habit: Habit?) throws -> Int {
+        let all = try context.fetch(FetchDescriptor<TodoTask>())
+        let scoped: [TodoTask]
+        if let habit {
+            scoped = all.filter { $0.habit?.id == habit.id }
+        } else {
+            scoped = all.filter { $0.habit == nil }
+        }
+        return scoped.map(\.sortOrder).max() ?? -1
     }
 }

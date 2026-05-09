@@ -2,8 +2,11 @@ import SwiftUI
 import SwiftData
 
 struct HabitListView: View {
+    var dismissable: Bool = false
+
     @Environment(\.modelContext) private var context
     @Environment(\.theme) private var theme
+    @Environment(\.dismiss) private var dismiss
 
     @Query(
         filter: #Predicate<Habit> { !$0.isArchived },
@@ -66,6 +69,11 @@ struct HabitListView: View {
             }
             .navigationTitle("Habits")
             .toolbar {
+                if dismissable {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         formMode = .create
