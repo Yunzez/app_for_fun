@@ -24,6 +24,7 @@ struct HabitFormView: View {
     @State private var healthBinding: HealthBinding? = nil
 
     @State private var didLoad: Bool = false
+    @FocusState private var nameFocused: Bool
 
     enum ScheduleKind: String, CaseIterable, Identifiable {
         case daily, weekly, monthly, flexible
@@ -45,6 +46,7 @@ struct HabitFormView: View {
                     name: $name,
                     iconName: $iconName,
                     accentSlot: $accentSlot,
+                    nameFocused: $nameFocused,
                     palette: theme.habitPalette
                 )
                 GoalSection(
@@ -82,6 +84,13 @@ struct HabitFormView: View {
                 loadFromHabit()
                 didLoad = true
             }
+        }
+        .task {
+            // Wait for the sheet's presentation animation to settle before
+            // focusing — focus set during the appear transition is sometimes
+            // dropped by SwiftUI.
+            try? await Task.sleep(for: .milliseconds(200))
+            if habit == nil { nameFocused = true }
         }
     }
 
@@ -166,15 +175,16 @@ struct HabitFormView: View {
 // MARK: - Sections
 
 private struct BasicsSection: View {
-    @Environment(\.theme) private var theme
     @Binding var name: String
     @Binding var iconName: String
     @Binding var accentSlot: Int
+    @FocusState.Binding var nameFocused: Bool
     let palette: [Color]
 
     var body: some View {
         Section("Basics") {
             TextField("Name", text: $name)
+                .focused($nameFocused)
             IconPicker(selected: $iconName)
             AccentPicker(selected: $accentSlot, palette: palette)
         }
