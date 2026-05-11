@@ -12,6 +12,14 @@ final class Habit {
     /// Custom unit label for count habits ("pages", "glasses"). Empty = no
     /// unit shown. Duration habits ignore this and always render "min".
     var unit: String = ""
+    /// Optional to survive lightweight migration from before the field
+    /// existed. Treat nil as `.atLeast`.
+    var direction: GoalDirection? = nil
+    /// If false, the habit never appears on the Today tab regardless of
+    /// schedule (e.g., for "background" trackers the user manages from Habits).
+    /// Optional for the same migration reason as `direction` — legacy rows
+    /// load as nil and resolve to `true` (visible by default).
+    var showOnToday: Bool? = nil
 
     /// Persisted JSON form of `schedule`. SwiftData can't natively persist
     /// `Codable` enums with `Set`-typed associated values (it errors with
@@ -71,7 +79,9 @@ final class Habit {
         goalKind: GoalKind = .count,
         goalTarget: Double = 1,
         unit: String = "",
+        direction: GoalDirection = .atLeast,
         schedule: HabitSchedule = .daily,
+        showOnToday: Bool? = true,
         reminderTime: Date? = nil,
         healthBinding: HealthBinding? = nil,
         sortOrder: Int = 0
@@ -83,11 +93,77 @@ final class Habit {
         self.goalKind = goalKind
         self.goalTarget = goalTarget
         self.unit = unit
+        self.direction = direction
         self.scheduleData = (try? JSONEncoder().encode(schedule)) ?? Data()
+        self.showOnToday = showOnToday
         self.reminderTime = reminderTime
         self.healthBinding = healthBinding
         self.sortOrder = sortOrder
         self.isArchived = false
         self.createdAt = .now
+    }
+}
+
+extension Habit {
+    /// Effective direction, falling back to `.atLeast` for legacy rows.
+    var resolvedDirection: GoalDirection { direction ?? .atLeast }
+
+    /// Effective Today visibility, defaulting to `true` for legacy rows
+    /// (loaded as nil).
+    var resolvedShowOnToday: Bool { showOnToday ?? true }
+
+    /// Should this habit be shown on Today right now? Combines `showOnToday`,
+    /// the schedule type, and (for `.flexible`) the cooldown since last active
+    /// entry. Flexible habits also hide once today already has activity — the
+    /// cooldown is "do it, then come back in N days".
+    func isScheduledForToday(_ date: Date = .now, calendar: Calendar = .current) -> Bool {
+        guard resolvedShowOnToday else { return false }
+        switch schedule {
+        case .daily, .weekly, .monthly:
+            return schedule.isScheduled(on: date, calendar: calendar)
+        case .flexible(let everyDays):
+            if hasActivity(on: date, calendar: calendar) { return false }
+            return daysSinceLastActivity(before: date, calendar: calendar) >= everyDays
+        }
+    }
+
+    /// True if there's an entry with `value > 0` on the same day as `date`.
+    func hasActivity(on date: Date, calendar: Calendar = .current) -> Bool {
+        entries.contains { entry in
+            entry.value > 0 && calendar.isDate(entry.date, inSameDayAs: date)
+        }
+    }
+
+    /// Days between the most recent entry-with-activity strictly before
+    /// `date` and `date` itself. Returns `.max` if no prior activity exists.
+    func daysSinceLastActivity(before date: Date, calendar: Calendar = .current) -> Int {
+        let today = calendar.startOfDay(for: date)
+        let lastActive = entries
+            .filter { $0.value > 0 && $0.date < today }
+            .map { calendar.startOfDay(for: $0.date) }
+            .max()
+        guard let last = lastActive else { return .max }
+        return calendar.dateComponents([.day], from: last, to: today).day ?? 0
+    }
+
+    /// Day-end streak rule: does `value` count toward the streak for this
+    /// habit's direction? Liberal for atLeast (any activity > 0 passes —
+    /// preserves the original "engagement counts" rule). Strict for atMost
+    /// (must be > 0 and ≤ target — must engage *and* stay under).
+    func successForStreak(_ value: Double) -> Bool {
+        switch resolvedDirection {
+        case .atLeast: return value > 0
+        case .atMost: return value > 0 && value <= goalTarget
+        }
+    }
+
+    /// Strict "did you hit the goal" check used for completion badges.
+    /// Differs from `successForStreak` only for atLeast, where this requires
+    /// `value >= target` rather than just any activity.
+    func goalMet(_ value: Double) -> Bool {
+        switch resolvedDirection {
+        case .atLeast: return value >= goalTarget
+        case .atMost: return value > 0 && value <= goalTarget
+        }
     }
 }

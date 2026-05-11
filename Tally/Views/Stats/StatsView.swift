@@ -69,12 +69,12 @@ struct StatsView: View {
 
     private var todayCompleted: Int {
         habits.filter { habit in
-            habit.schedule.isScheduled(on: .now) && habitHasActivityToday(habit)
+            habit.isScheduledForToday() && habitHasActivityToday(habit)
         }.count
     }
 
     private var todayScheduled: Int {
-        habits.filter { $0.schedule.isScheduled(on: .now) }.count
+        habits.filter { $0.isScheduledForToday() }.count
     }
 
     private var weekCompleted: Int {

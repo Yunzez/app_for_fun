@@ -27,7 +27,7 @@ struct HabitStatsSection: View {
 
     private var streakUnit: String {
         switch habit.schedule {
-        case .flexible: return "wk"
+        case .flexible: return "×"
         default: return "d"
         }
     }

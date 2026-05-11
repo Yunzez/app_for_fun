@@ -29,8 +29,14 @@ struct TodayHabitRow: View {
         return min(1, bankedValue / habit.goalTarget)
     }
 
+    /// atMost is never "complete" during the in-progress day — judgement is
+    /// deferred until rollover. atLeast uses the strict `goalMet` rule.
     private var isComplete: Bool {
-        bankedValue >= habit.goalTarget
+        habit.resolvedDirection == .atLeast && habit.goalMet(bankedValue)
+    }
+
+    private var isOverLimit: Bool {
+        habit.resolvedDirection == .atMost && bankedValue > habit.goalTarget
     }
 
     private var accent: Color {
@@ -57,6 +63,11 @@ struct TodayHabitRow: View {
                     if isComplete {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(theme.success)
+                            .font(.caption)
+                    }
+                    if isOverLimit {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(theme.error)
                             .font(.caption)
                     }
                     if timer.isActive(for: habit) {

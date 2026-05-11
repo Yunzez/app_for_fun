@@ -3,10 +3,15 @@ import Foundation
 /// Pure derived stats over a single habit. No SwiftData state of its own —
 /// reads `habit.entries` and the schedule, computes everything else.
 ///
-/// Streak rule for v1.0 (per user direction): a scheduled period counts toward
-/// the streak if there was *any* activity (entry value > 0) during it. Goal
-/// completion is not required. The "today/this week in progress" period
-/// doesn't break the streak if it has no activity yet — it just doesn't count.
+/// Streak rules:
+///   - atLeast: scheduled past day counts toward streak if value > 0.
+///     Otherwise breaks. Today (in-progress) doesn't count, doesn't break.
+///   - atMost: scheduled past day counts if 0 < value ≤ target. Over-target
+///     OR no engagement breaks. Today (in-progress) doesn't count, doesn't
+///     break — judgement deferred until day rollover.
+///   - flexible(everyDays:): walks active entries directly. Streak intact
+///     while gaps between consecutive active entries (and the gap from the
+///     most recent to today) stay ≤ `everyDays`.
 @MainActor
 struct StatsService {
     let habit: Habit
@@ -16,8 +21,8 @@ struct StatsService {
 
     func currentStreak(asOf today: Date = .now) -> Int {
         switch habit.schedule {
-        case .flexible:
-            return weeklyStreakBack(asOf: today)
+        case .flexible(let everyDays):
+            return cooldownStreakBack(asOf: today, everyDays: everyDays)
         default:
             return dailyStreakBack(asOf: today)
         }
@@ -25,8 +30,8 @@ struct StatsService {
 
     func longestStreak() -> Int {
         switch habit.schedule {
-        case .flexible:
-            return longestWeeklyStreak()
+        case .flexible(let everyDays):
+            return longestCooldownStreak(everyDays: everyDays)
         default:
             return longestDailyStreak()
         }
@@ -35,7 +40,7 @@ struct StatsService {
     // MARK: - Hit rate
 
     /// Fraction of scheduled days in the last `daysBack` days (including today)
-    /// that had any activity. 0...1.
+    /// that "succeeded" by the habit's direction rule. 0...1.
     func hitRate(daysBack: Int, asOf today: Date = .now) -> Double {
         let day0 = calendar.startOfDay(for: today)
         var scheduled = 0
@@ -44,7 +49,7 @@ struct StatsService {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: day0) else { continue }
             if isScheduled(on: day) {
                 scheduled += 1
-                if hasActivity(on: day) { hit += 1 }
+                if successOn(day) { hit += 1 }
             }
         }
         return scheduled == 0 ? 0 : Double(hit) / Double(scheduled)
@@ -59,12 +64,12 @@ struct StatsService {
 
         while day >= earliest {
             if isScheduled(on: day) {
-                if hasActivity(on: day) {
+                if successOn(day) {
                     count += 1
                 } else if calendar.isDateInToday(day) {
-                    // Today not yet active — don't count, don't break.
+                    // Today in progress — don't count, don't break.
                 } else {
-                    // Past scheduled day with no activity → streak broken.
+                    // Past scheduled day failed → streak broken.
                     break
                 }
             }
@@ -82,7 +87,7 @@ struct StatsService {
         var day = earliest
         while day <= today {
             if isScheduled(on: day) {
-                if hasActivity(on: day) {
+                if successOn(day) {
                     current += 1
                     longest = max(longest, current)
                 } else if !calendar.isDateInToday(day) {
@@ -95,44 +100,48 @@ struct StatsService {
         return longest
     }
 
-    // MARK: - Week-based streaks (flexible schedule)
+    // MARK: - Cooldown streaks (flexible "every N days")
 
-    private func weeklyStreakBack(asOf today: Date) -> Int {
-        guard let currentWeek = calendar.dateInterval(of: .weekOfYear, for: today)?.start else { return 0 }
-        guard let earliestWeek = earliestEntryWeekStart() else { return 0 }
+    private func cooldownStreakBack(asOf today: Date, everyDays: Int) -> Int {
+        let activeDays = sortedSuccessDaysDescending()
+        guard let mostRecent = activeDays.first else { return 0 }
 
-        var count = 0
-        var weekStart = currentWeek
-        while weekStart >= earliestWeek {
-            if hasActivityInWeek(starting: weekStart) {
+        let today0 = calendar.startOfDay(for: today)
+        let sinceLast = calendar.dateComponents([.day], from: mostRecent, to: today0).day ?? 0
+        if sinceLast > everyDays { return 0 }
+
+        var count = 1
+        var prev = mostRecent
+        for day in activeDays.dropFirst() {
+            let gap = calendar.dateComponents([.day], from: day, to: prev).day ?? 0
+            if gap <= everyDays {
                 count += 1
-            } else if weekStart == currentWeek {
-                // Current week with no activity yet — don't count, don't break.
+                prev = day
             } else {
                 break
             }
-            guard let prev = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart) else { break }
-            weekStart = prev
         }
         return count
     }
 
-    private func longestWeeklyStreak() -> Int {
-        guard let earliestWeek = earliestEntryWeekStart() else { return 0 }
-        guard let currentWeek = calendar.dateInterval(of: .weekOfYear, for: .now)?.start else { return 0 }
-
+    private func longestCooldownStreak(everyDays: Int) -> Int {
+        let activeDays = sortedSuccessDaysDescending().reversed()  // ascending
         var longest = 0
         var current = 0
-        var weekStart = earliestWeek
-        while weekStart <= currentWeek {
-            if hasActivityInWeek(starting: weekStart) {
-                current += 1
-                longest = max(longest, current)
-            } else if weekStart != currentWeek {
-                current = 0
+        var prev: Date?
+        for day in activeDays {
+            if let p = prev {
+                let gap = calendar.dateComponents([.day], from: p, to: day).day ?? 0
+                if gap <= everyDays {
+                    current += 1
+                } else {
+                    current = 1
+                }
+            } else {
+                current = 1
             }
-            guard let next = calendar.date(byAdding: .weekOfYear, value: 1, to: weekStart) else { break }
-            weekStart = next
+            longest = max(longest, current)
+            prev = day
         }
         return longest
     }
@@ -143,25 +152,22 @@ struct StatsService {
         habit.schedule.isScheduled(on: day, calendar: calendar)
     }
 
-    private func hasActivity(on day: Date) -> Bool {
-        habit.entries.contains { entry in
-            calendar.isDate(entry.date, inSameDayAs: day) && entry.value > 0
-        }
+    /// Did the habit succeed on `day` per its direction rule?
+    /// atLeast: value > 0. atMost: 0 < value ≤ target.
+    private func successOn(_ day: Date) -> Bool {
+        let entry = habit.entries.first { calendar.isDate($0.date, inSameDayAs: day) }
+        let value = entry?.value ?? 0
+        return habit.successForStreak(value)
     }
 
-    private func hasActivityInWeek(starting weekStart: Date) -> Bool {
-        guard let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else { return false }
-        return habit.entries.contains { entry in
-            entry.date >= weekStart && entry.date < weekEnd && entry.value > 0
-        }
+    private func sortedSuccessDaysDescending() -> [Date] {
+        habit.entries
+            .filter { habit.successForStreak($0.value) }
+            .map { calendar.startOfDay(for: $0.date) }
+            .sorted(by: >)
     }
 
     private func earliestEntryDay() -> Date? {
         habit.entries.map(\.date).min().map { calendar.startOfDay(for: $0) }
-    }
-
-    private func earliestEntryWeekStart() -> Date? {
-        guard let earliest = habit.entries.map(\.date).min() else { return nil }
-        return calendar.dateInterval(of: .weekOfYear, for: earliest)?.start
     }
 }

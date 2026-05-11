@@ -161,7 +161,7 @@ struct HabitDetailView: View {
         case .daily: return "Daily"
         case .weekly(let days): return "\(days.count)×/week"
         case .monthly(let days): return "\(days.count)×/month"
-        case .flexible(let n): return "\(n)×/week, flexible"
+        case .flexible(let n): return n == 1 ? "Every day" : "Every \(n) days"
         }
     }
 }

@@ -16,10 +16,12 @@ struct HabitFormView: View {
     @State private var countTarget: Int = 1
     @State private var durationMinutes: Int = 30
     @State private var unit: String = ""
+    @State private var direction: GoalDirection = .atLeast
     @State private var scheduleKind: ScheduleKind = .daily
     @State private var weeklyDays: Set<Weekday> = [.monday, .wednesday, .friday]
     @State private var monthlyDays: Set<Int> = [1]
-    @State private var flexibleTimes: Int = 3
+    @State private var flexibleEveryDays: Int = 3
+    @State private var showOnToday: Bool = true
     @State private var hasReminder: Bool = false
     @State private var reminderTime: Date = HabitFormView.defaultReminderTime
     @State private var healthBinding: HealthBinding? = nil
@@ -56,14 +58,16 @@ struct HabitFormView: View {
                         goalKind: $goalKind,
                         countTarget: $countTarget,
                         durationMinutes: $durationMinutes,
-                        unit: $unit
+                        unit: $unit,
+                        direction: $direction
                     )
                     Divider()
                     ScheduleBlock(
                         scheduleKind: $scheduleKind,
                         weeklyDays: $weeklyDays,
                         monthlyDays: $monthlyDays,
-                        flexibleTimes: $flexibleTimes
+                        flexibleEveryDays: $flexibleEveryDays,
+                        showOnToday: $showOnToday
                     )
                     Divider()
                     ReminderBlock(hasReminder: $hasReminder, reminderTime: $reminderTime)
@@ -119,6 +123,8 @@ struct HabitFormView: View {
             durationMinutes = max(1, Int(habit.goalTarget / 60))
         }
         unit = habit.unit
+        direction = habit.resolvedDirection
+        showOnToday = habit.resolvedShowOnToday
         switch habit.schedule {
         case .daily:
             scheduleKind = .daily
@@ -130,7 +136,7 @@ struct HabitFormView: View {
             monthlyDays = days
         case .flexible(let n):
             scheduleKind = .flexible
-            flexibleTimes = n
+            flexibleEveryDays = n
         }
         if let r = habit.reminderTime {
             hasReminder = true
@@ -152,7 +158,7 @@ struct HabitFormView: View {
             case .daily: return .daily
             case .weekly: return .weekly(weekdays: weeklyDays.isEmpty ? [.monday] : weeklyDays)
             case .monthly: return .monthly(daysOfMonth: monthlyDays.isEmpty ? [1] : monthlyDays)
-            case .flexible: return .flexible(timesPerWeek: max(1, flexibleTimes))
+            case .flexible: return .flexible(everyDays: max(1, flexibleEveryDays))
             }
         }()
         let reminder: Date? = hasReminder ? reminderTime : nil
@@ -164,7 +170,9 @@ struct HabitFormView: View {
             habit.goalKind = goalKind
             habit.goalTarget = target
             habit.unit = trimmedUnit
+            habit.direction = direction
             habit.schedule = schedule
+            habit.showOnToday = showOnToday
             habit.reminderTime = reminder
             habit.healthBinding = healthBinding
         } else {
@@ -175,7 +183,9 @@ struct HabitFormView: View {
                 goalKind: goalKind,
                 goalTarget: target,
                 unit: trimmedUnit,
+                direction: direction,
                 schedule: schedule,
+                showOnToday: showOnToday,
                 reminderTime: reminder,
                 healthBinding: healthBinding
             )
@@ -230,6 +240,7 @@ private struct GoalBlock: View {
     @Binding var countTarget: Int
     @Binding var durationMinutes: Int
     @Binding var unit: String
+    @Binding var direction: GoalDirection
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -237,6 +248,14 @@ private struct GoalBlock: View {
             Picker("Kind", selection: $goalKind) {
                 Text("Count").tag(GoalKind.count)
                 Text("Duration").tag(GoalKind.duration)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Picker("Direction", selection: $direction) {
+                ForEach(GoalDirection.allCases, id: \.self) { d in
+                    Text(d.displayName).tag(d)
+                }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -290,7 +309,8 @@ private struct ScheduleBlock: View {
     @Binding var scheduleKind: HabitFormView.ScheduleKind
     @Binding var weeklyDays: Set<Weekday>
     @Binding var monthlyDays: Set<Int>
-    @Binding var flexibleTimes: Int
+    @Binding var flexibleEveryDays: Int
+    @Binding var showOnToday: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -311,14 +331,17 @@ private struct ScheduleBlock: View {
             case .monthly:
                 MonthDayPicker(selected: $monthlyDays)
             case .flexible:
-                Stepper(value: $flexibleTimes, in: 1...7) {
+                Stepper(value: $flexibleEveryDays, in: 1...30) {
                     HStack {
-                        Text("Times per week")
+                        Text("Re-appear every")
                         Spacer()
-                        Text("\(flexibleTimes)").foregroundStyle(.secondary)
+                        Text(flexibleEveryDays == 1 ? "1 day" : "\(flexibleEveryDays) days")
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
+
+            Toggle("Show on Today tab", isOn: $showOnToday)
         }
     }
 }

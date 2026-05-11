@@ -43,16 +43,22 @@ struct HabitHeatmap: View {
         let isFuture = day > calendar.startOfDay(for: .now)
 
         return RoundedRectangle(cornerRadius: 2)
-            .fill(cellColor(progress: progress, scheduled: scheduled, isFuture: isFuture, hasActivity: value > 0))
+            .fill(cellColor(value: value, progress: progress, scheduled: scheduled, isFuture: isFuture))
             .frame(width: cellSize, height: cellSize)
     }
 
-    private func cellColor(progress: Double, scheduled: Bool, isFuture: Bool, hasActivity: Bool) -> Color {
+    private func cellColor(value: Double, progress: Double, scheduled: Bool, isFuture: Bool) -> Color {
         if isFuture { return theme.backgroundTertiary.opacity(0.4) }
         if !scheduled { return theme.backgroundTertiary.opacity(0.5) }
-        if !hasActivity { return theme.backgroundTertiary }
-        let intensity = max(0.3, min(1.0, progress))
-        return accent.opacity(intensity)
+        switch habit.resolvedDirection {
+        case .atLeast:
+            if value <= 0 { return theme.backgroundTertiary }
+            return accent.opacity(max(0.3, min(1.0, progress)))
+        case .atMost:
+            if value <= 0 { return theme.backgroundTertiary }
+            if value > habit.goalTarget { return theme.error.opacity(0.7) }
+            return accent.opacity(max(0.3, min(1.0, progress)))
+        }
     }
 
     /// Build the day list ordered column-by-column for `LazyHGrid` consumption.

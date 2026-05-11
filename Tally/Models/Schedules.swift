@@ -5,6 +5,21 @@ enum GoalKind: String, Codable, Hashable, CaseIterable {
     case duration
 }
 
+/// Which side of the target counts as "winning".
+///   .atLeast — meet or exceed the target (read 30 pages, walk 10k steps)
+///   .atMost  — stay at or below the target (2000 cal, screen time)
+enum GoalDirection: String, Codable, Hashable, CaseIterable {
+    case atLeast
+    case atMost
+
+    var displayName: String {
+        switch self {
+        case .atLeast: "Aim for at least"
+        case .atMost: "Stay under"
+        }
+    }
+}
+
 /// Where the value on an `Entry` came from. `.manual` always wins over
 /// `.healthkit` — once the user touches an entry, HealthKit can't overwrite it.
 enum EntrySource: String, Codable, Hashable {
@@ -46,10 +61,15 @@ enum HabitSchedule: Codable, Hashable {
     case daily
     case weekly(weekdays: Set<Weekday>)
     case monthly(daysOfMonth: Set<Int>)
-    case flexible(timesPerWeek: Int)
+    /// Cooldown schedule: re-appears on Today `everyDays` after last entry
+    /// with activity. (Renamed semantically from "N times per week" on
+    /// 2026-05-10 — old persisted `timesPerWeek` JSON no longer decodes and
+    /// silently falls back to `.daily` in `Habit.schedule`.)
+    case flexible(everyDays: Int)
 
-    /// Whether this schedule is "scheduled" for a given calendar date.
-    /// Used by Today view (M2) to filter habits.
+    /// Pure date-based scheduling check (no habit history). For `.flexible`,
+    /// this returns true and the cooldown is applied separately by
+    /// `Habit.isScheduledForToday(_:)`.
     func isScheduled(on date: Date, calendar: Calendar = .current) -> Bool {
         switch self {
         case .daily:

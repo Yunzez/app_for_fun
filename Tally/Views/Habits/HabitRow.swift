@@ -47,14 +47,16 @@ struct HabitRow: View {
                 return r == 0 ? "\(h) hr" : "\(h) hr \(r) min"
             }
         }()
+        let directed = habit.resolvedDirection == .atMost ? "≤ \(goal)" : goal
         let sched: String = {
             switch habit.schedule {
             case .daily: return "daily"
             case .weekly(let days): return "\(days.count)×/week"
             case .monthly(let days): return "\(days.count)×/month"
-            case .flexible(let n): return "\(n)×/week, flexible"
+            case .flexible(let n): return n == 1 ? "every day" : "every \(n) days"
             }
         }()
-        return "\(goal) · \(sched)"
+        let hidden = habit.resolvedShowOnToday ? "" : " · hidden from Today"
+        return "\(directed) · \(sched)\(hidden)"
     }
 }

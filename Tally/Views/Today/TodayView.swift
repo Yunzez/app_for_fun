@@ -16,7 +16,7 @@ struct TodayView: View {
     @State private var showSettings: Bool = false
 
     private var todaysHabits: [Habit] {
-        allHabits.filter { $0.schedule.isScheduled(on: .now) }
+        allHabits.filter { $0.isScheduledForToday() }
     }
 
     var body: some View {
