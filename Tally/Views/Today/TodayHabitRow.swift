@@ -1,14 +1,24 @@
 import SwiftUI
+import SwiftData
 
 struct TodayHabitRow: View {
     @Environment(TimerService.self) private var timer
     @Environment(\.theme) private var theme
 
     let habit: Habit
+    @Query private var todayEntries: [Entry]
 
-    private var todayEntry: Entry? {
-        habit.entries.first { Calendar.current.isDate($0.date, inSameDayAs: .now) }
+    init(habit: Habit) {
+        self.habit = habit
+        let habitID = habit.id
+        let start = Calendar.current.startOfDay(for: .now)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
+        _todayEntries = Query(filter: #Predicate<Entry> { e in
+            e.date >= start && e.date < end && e.habit?.id == habitID
+        })
     }
+
+    private var todayEntry: Entry? { todayEntries.first }
 
     private var bankedValue: Double {
         todayEntry?.value ?? 0
@@ -19,14 +29,8 @@ struct TodayHabitRow: View {
         return min(1, bankedValue / habit.goalTarget)
     }
 
-    private var openTasksCount: Int {
-        habit.tasks.filter { !$0.isDone }.count
-    }
-
-    /// A habit is complete when its goal is met *and* no attached tasks are
-    /// still open (design.html §4.8).
     private var isComplete: Bool {
-        bankedValue >= habit.goalTarget && openTasksCount == 0
+        bankedValue >= habit.goalTarget
     }
 
     private var accent: Color {
@@ -61,14 +65,9 @@ struct TodayHabitRow: View {
                             .font(.caption)
                     }
                 }
-                HStack(spacing: 4) {
-                    Text(progressText)
-                    if openTasksCount > 0 {
-                        Text("· \(openTasksCount) open task\(openTasksCount == 1 ? "" : "s")")
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(theme.textSecondary)
+                Text(progressText)
+                    .font(.caption)
+                    .foregroundStyle(theme.textSecondary)
             }
 
             Spacer()

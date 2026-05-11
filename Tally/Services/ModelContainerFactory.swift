@@ -15,7 +15,7 @@ enum ModelContainerFactory {
             Habit.self,
             Entry.self,
             TimerSession.self,
-            TodoTask.self
+            ActivityLog.self
         ])
         let configuration = ModelConfiguration(
             "Tally",

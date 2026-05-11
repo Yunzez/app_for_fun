@@ -35,9 +35,6 @@ final class Habit {
     @Relationship(deleteRule: .cascade, inverse: \Entry.habit)
     var entries: [Entry] = []
 
-    @Relationship(deleteRule: .cascade, inverse: \TodoTask.habit)
-    var tasks: [TodoTask] = []
-
     init(
         name: String,
         iconName: String = "star.fill",

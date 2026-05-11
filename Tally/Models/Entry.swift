@@ -15,6 +15,9 @@ final class Entry {
     @Relationship(deleteRule: .cascade, inverse: \TimerSession.entry)
     var sessions: [TimerSession] = []
 
+    @Relationship(deleteRule: .cascade, inverse: \ActivityLog.entry)
+    var logs: [ActivityLog] = []
+
     init(habit: Habit, date: Date, value: Double = 0, note: String? = nil, source: EntrySource = .manual) {
         self.id = UUID()
         self.habit = habit

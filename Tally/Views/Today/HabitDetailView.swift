@@ -31,7 +31,7 @@ struct HabitDetailView: View {
                 TallyDivider()
                 progressSection
                 TallyDivider()
-                HabitTaskSection(habit: habit)
+                LogSection(habit: habit)
                 TallyDivider()
                 HabitStatsSection(habit: habit)
                 TallyDivider()
@@ -83,7 +83,7 @@ struct HabitDetailView: View {
                 dismiss()
             }
         } message: {
-            Text("All entries, sessions, and tasks will be removed. This can't be undone.")
+            Text("All entries, sessions, and logs will be removed. This can't be undone.")
         }
         .onAppear {
             if !didLoadNote {
@@ -173,11 +173,19 @@ private struct CountController: View {
     @Environment(\.theme) private var theme
 
     let habit: Habit
+    @Query private var todayEntries: [Entry]
 
-    private var todayEntry: Entry? {
-        habit.entries.first { Calendar.current.isDate($0.date, inSameDayAs: .now) }
+    init(habit: Habit) {
+        self.habit = habit
+        let habitID = habit.id
+        let start = Calendar.current.startOfDay(for: .now)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
+        _todayEntries = Query(filter: #Predicate<Entry> { e in
+            e.date >= start && e.date < end && e.habit?.id == habitID
+        })
     }
 
+    private var todayEntry: Entry? { todayEntries.first }
     private var currentValue: Int { Int(todayEntry?.value ?? 0) }
     private var targetValue: Int { Int(habit.goalTarget) }
 
@@ -224,11 +232,19 @@ private struct DurationController: View {
     @Environment(\.theme) private var theme
 
     let habit: Habit
+    @Query private var todayEntries: [Entry]
 
-    private var todayEntry: Entry? {
-        habit.entries.first { Calendar.current.isDate($0.date, inSameDayAs: .now) }
+    init(habit: Habit) {
+        self.habit = habit
+        let habitID = habit.id
+        let start = Calendar.current.startOfDay(for: .now)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
+        _todayEntries = Query(filter: #Predicate<Entry> { e in
+            e.date >= start && e.date < end && e.habit?.id == habitID
+        })
     }
 
+    private var todayEntry: Entry? { todayEntries.first }
     private var bankedSeconds: TimeInterval { todayEntry?.value ?? 0 }
     private var targetSeconds: TimeInterval { habit.goalTarget }
     private var isActive: Bool { timer.isActive(for: habit) }
