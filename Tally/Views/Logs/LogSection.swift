@@ -53,7 +53,7 @@ struct LogSection: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(todayLogs) { log in
-                        LogRow(log: log, goalKind: habit.goalKind) {
+                        LogRow(log: log, habit: habit) {
                             editingLog = log
                         }
                         .padding(.vertical, 6)

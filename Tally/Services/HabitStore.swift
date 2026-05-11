@@ -17,6 +17,7 @@ struct HabitStore {
         accentSlot: Int,
         goalKind: GoalKind,
         goalTarget: Double,
+        unit: String,
         schedule: HabitSchedule,
         reminderTime: Date?,
         healthBinding: HealthBinding?
@@ -28,6 +29,7 @@ struct HabitStore {
             accentSlot: accentSlot,
             goalKind: goalKind,
             goalTarget: goalTarget,
+            unit: unit,
             schedule: schedule,
             reminderTime: reminderTime,
             healthBinding: healthBinding,

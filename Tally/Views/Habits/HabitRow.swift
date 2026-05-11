@@ -38,7 +38,8 @@ struct HabitRow: View {
         let goal: String = {
             switch habit.goalKind {
             case .count:
-                return "\(Int(habit.goalTarget))×"
+                let t = Int(habit.goalTarget)
+                return habit.unit.isEmpty ? "\(t)×" : "\(t) \(habit.unit)"
             case .duration:
                 let mins = Int(habit.goalTarget / 60)
                 if mins < 60 { return "\(mins) min" }

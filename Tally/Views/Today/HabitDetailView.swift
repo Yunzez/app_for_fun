@@ -187,7 +187,8 @@ private struct CountController: View {
 
     private var todayEntry: Entry? { todayEntries.first }
     private var currentValue: Int { Int(todayEntry?.value ?? 0) }
-    private var targetValue: Int { Int(habit.goalTarget) }
+
+    @State private var editorOpen: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -195,34 +196,30 @@ private struct CountController: View {
                 Text("\(currentValue)")
                     .font(.system(size: 56, weight: .light, design: .rounded))
                     .monospacedDigit()
-                Text("/ \(targetValue)")
+                    .foregroundStyle(theme.textPrimary)
+                Text(targetLabel)
                     .font(.title3)
                     .foregroundStyle(theme.textSecondary)
                 Spacer()
             }
+            .contentShape(Rectangle())
+            .onTapGesture { editorOpen = true }
 
-            HStack(spacing: 12) {
-                Button {
-                    HabitStore(context: context).adjust(habit, by: -1)
-                } label: {
-                    Label("Remove", systemImage: "minus.circle.fill")
-                        .font(.title3)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.bordered)
-                .disabled(currentValue <= 0)
-
-                Button {
-                    HabitStore(context: context).adjust(habit, by: 1)
-                } label: {
-                    Label("Add", systemImage: "plus.circle.fill")
-                        .font(.title3)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accentPrimary)
+            Stepper("Adjust by 1") {
+                HabitStore(context: context).adjust(habit, by: 1)
+            } onDecrement: {
+                HabitStore(context: context).adjust(habit, by: -1)
             }
         }
+        .sheet(isPresented: $editorOpen) {
+            EditValueSheet(habit: habit, initialValue: Double(currentValue))
+        }
+    }
+
+    private var targetLabel: String {
+        let unit = habit.unit
+        let tgt = Int(habit.goalTarget)
+        return unit.isEmpty ? "/ \(tgt)" : "/ \(tgt) \(unit)"
     }
 }
 
@@ -249,6 +246,8 @@ private struct DurationController: View {
     private var targetSeconds: TimeInterval { habit.goalTarget }
     private var isActive: Bool { timer.isActive(for: habit) }
 
+    @State private var editorOpen: Bool = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             TimelineView(.periodic(from: .now, by: 1)) { tcontext in
@@ -257,6 +256,11 @@ private struct DurationController: View {
                     .font(.system(size: 56, weight: .light, design: .rounded))
                     .monospacedDigit()
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(theme.textPrimary)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if !isActive { editorOpen = true }
             }
 
             HStack {
@@ -281,6 +285,9 @@ private struct DurationController: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(isActive ? theme.error : theme.accentPrimary)
+        }
+        .sheet(isPresented: $editorOpen) {
+            EditValueSheet(habit: habit, initialValue: bankedSeconds)
         }
     }
 
@@ -312,12 +319,7 @@ private struct HistoryRow: View {
     @State private var editorPresented: Bool = false
 
     private var displayValue: String {
-        switch habit.goalKind {
-        case .count: return "\(Int(entry.value))"
-        case .duration:
-            let mins = Int(entry.value / 60)
-            return "\(mins) min"
-        }
+        habit.formatValue(entry.value)
     }
 
     private var dateLabel: String {
@@ -373,9 +375,9 @@ private struct EntryEditorSheet: View {
                     case .count:
                         Stepper(value: $draft, in: 0...999, step: 1) {
                             HStack {
-                                Text("Count")
+                                Text(habit.unit.isEmpty ? "Count" : habit.unit.capitalized)
                                 Spacer()
-                                Text("\(Int(draft))").foregroundStyle(theme.textSecondary)
+                                Text(habit.formatValue(draft)).foregroundStyle(theme.textSecondary)
                             }
                         }
                     case .duration:
@@ -383,7 +385,7 @@ private struct EntryEditorSheet: View {
                             HStack {
                                 Text("Duration")
                                 Spacer()
-                                Text("\(Int(draft / 60)) min").foregroundStyle(theme.textSecondary)
+                                Text(habit.formatValue(draft)).foregroundStyle(theme.textSecondary)
                             }
                         }
                     }

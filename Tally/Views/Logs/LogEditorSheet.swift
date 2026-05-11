@@ -29,11 +29,19 @@ struct LogEditorSheet: View {
         self.mode = .edit(log: log)
     }
 
-    private var goalKind: GoalKind {
+    private var habit: Habit? {
         switch mode {
-        case .create(let habit): return habit.goalKind
-        case .edit(let log): return log.entry?.habit?.goalKind ?? .count
+        case .create(let habit): return habit
+        case .edit(let log): return log.entry?.habit
         }
+    }
+
+    private var goalKind: GoalKind {
+        habit?.goalKind ?? .count
+    }
+
+    private var unit: String {
+        habit?.unit ?? ""
     }
 
     private var isCreate: Bool {
@@ -101,11 +109,11 @@ struct LogEditorSheet: View {
             switch goalKind {
             case .count:
                 Stepper(value: $valueDraft, in: 0...999, step: 1) {
-                    Text(valueDraft == 0 ? "—" : "\(Int(valueDraft))")
+                    Text(valueDraft == 0 ? "—" : (habit?.formatValue(valueDraft) ?? "\(Int(valueDraft))"))
                 }
             case .duration:
                 Stepper(value: $valueDraft, in: 0...36000, step: 60) {
-                    Text(valueDraft == 0 ? "—" : "\(Int(valueDraft / 60)) min")
+                    Text(valueDraft == 0 ? "—" : (habit?.formatValue(valueDraft) ?? "\(Int(valueDraft / 60)) min"))
                 }
             }
         }
@@ -132,16 +140,13 @@ struct LogEditorSheet: View {
 
     private var valueLabel: String {
         switch goalKind {
-        case .count: return "Count"
+        case .count: return unit.isEmpty ? "Count" : unit.capitalized
         case .duration: return "Duration"
         }
     }
 
     private var formattedValue: String {
-        switch goalKind {
-        case .count: return "\(Int(valueDraft))"
-        case .duration: return "\(Int(valueDraft / 60)) min"
-        }
+        habit?.formatValue(valueDraft) ?? "\(Int(valueDraft))"
     }
 
     private func load() {

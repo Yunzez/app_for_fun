@@ -5,7 +5,7 @@ struct LogRow: View {
     @Environment(\.theme) private var theme
 
     let log: ActivityLog
-    let goalKind: GoalKind
+    let habit: Habit
     let onTap: () -> Void
 
     var body: some View {
@@ -19,7 +19,7 @@ struct LogRow: View {
             }
             Spacer(minLength: 8)
             if log.value > 0 {
-                Text(valueText)
+                Text("+\(habit.formatValue(log.value))")
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(theme.textSecondary)
             }
@@ -32,13 +32,6 @@ struct LogRow: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-    }
-
-    private var valueText: String {
-        switch goalKind {
-        case .count: return "+\(Int(log.value))"
-        case .duration: return "+\(Int(log.value / 60)) min"
         }
     }
 

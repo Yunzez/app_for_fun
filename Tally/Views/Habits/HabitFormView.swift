@@ -15,6 +15,7 @@ struct HabitFormView: View {
     @State private var goalKind: GoalKind = .count
     @State private var countTarget: Int = 1
     @State private var durationMinutes: Int = 30
+    @State private var unit: String = ""
     @State private var scheduleKind: ScheduleKind = .daily
     @State private var weeklyDays: Set<Weekday> = [.monday, .wednesday, .friday]
     @State private var monthlyDays: Set<Int> = [1]
@@ -54,7 +55,8 @@ struct HabitFormView: View {
                     GoalBlock(
                         goalKind: $goalKind,
                         countTarget: $countTarget,
-                        durationMinutes: $durationMinutes
+                        durationMinutes: $durationMinutes,
+                        unit: $unit
                     )
                     Divider()
                     ScheduleBlock(
@@ -116,6 +118,7 @@ struct HabitFormView: View {
         case .duration:
             durationMinutes = max(1, Int(habit.goalTarget / 60))
         }
+        unit = habit.unit
         switch habit.schedule {
         case .daily:
             scheduleKind = .daily
@@ -141,6 +144,9 @@ struct HabitFormView: View {
         let target: Double = goalKind == .count
             ? Double(countTarget)
             : Double(durationMinutes * 60)
+        let trimmedUnit = goalKind == .count
+            ? unit.trimmingCharacters(in: .whitespacesAndNewlines)
+            : ""
         let schedule: HabitSchedule = {
             switch scheduleKind {
             case .daily: return .daily
@@ -157,6 +163,7 @@ struct HabitFormView: View {
             habit.accentSlot = accentSlot
             habit.goalKind = goalKind
             habit.goalTarget = target
+            habit.unit = trimmedUnit
             habit.schedule = schedule
             habit.reminderTime = reminder
             habit.healthBinding = healthBinding
@@ -167,6 +174,7 @@ struct HabitFormView: View {
                 accentSlot: accentSlot,
                 goalKind: goalKind,
                 goalTarget: target,
+                unit: trimmedUnit,
                 schedule: schedule,
                 reminderTime: reminder,
                 healthBinding: healthBinding
@@ -221,6 +229,7 @@ private struct GoalBlock: View {
     @Binding var goalKind: GoalKind
     @Binding var countTarget: Int
     @Binding var durationMinutes: Int
+    @Binding var unit: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -238,8 +247,20 @@ private struct GoalBlock: View {
                     HStack {
                         Text("Target")
                         Spacer()
-                        Text("\(countTarget)×").foregroundStyle(.secondary)
+                        Text(targetCountLabel).foregroundStyle(.secondary)
                     }
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Unit (optional)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    TextField("e.g. pages, glasses, reps", text: $unit)
+                        .textFieldStyle(.roundedBorder)
+                        .foregroundStyle(.primary)
+                        #if os(iOS)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        #endif
                 }
             case .duration:
                 Stepper(value: $durationMinutes, in: 1...600, step: 5) {
@@ -251,6 +272,11 @@ private struct GoalBlock: View {
                 }
             }
         }
+    }
+
+    private var targetCountLabel: String {
+        let trimmed = unit.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "\(countTarget)×" : "\(countTarget) \(trimmed)"
     }
 
     private func formatDuration(_ m: Int) -> String {

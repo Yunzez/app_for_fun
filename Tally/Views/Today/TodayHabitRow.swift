@@ -76,13 +76,6 @@ struct TodayHabitRow: View {
     }
 
     private var progressText: String {
-        switch habit.goalKind {
-        case .count:
-            return "\(Int(bankedValue)) / \(Int(habit.goalTarget))"
-        case .duration:
-            let valMin = Int(bankedValue / 60)
-            let tgtMin = Int(habit.goalTarget / 60)
-            return "\(valMin) / \(tgtMin) min"
-        }
+        habit.formatProgress(bankedValue)
     }
 }
