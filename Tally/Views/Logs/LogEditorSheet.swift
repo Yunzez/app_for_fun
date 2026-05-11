@@ -106,17 +106,48 @@ struct LogEditorSheet: View {
             Text(valueLabel)
                 .font(.subheadline)
                 .foregroundStyle(theme.textSecondary)
-            switch goalKind {
-            case .count:
-                Stepper(value: $valueDraft, in: 0...999, step: 1) {
-                    Text(valueDraft == 0 ? "—" : (habit?.formatValue(valueDraft) ?? "\(Int(valueDraft))"))
+            HStack {
+                switch goalKind {
+                case .count:
+                    TextField("0", value: countBinding, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 140)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(.primary)
+                        #if os(iOS)
+                        .keyboardType(.numberPad)
+                        #endif
+                    if !unit.isEmpty {
+                        Text(unit).foregroundStyle(theme.textSecondary)
+                    }
+                case .duration:
+                    TextField("0", value: durationBinding, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 140)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(.primary)
+                        #if os(iOS)
+                        .keyboardType(.numberPad)
+                        #endif
+                    Text("min").foregroundStyle(theme.textSecondary)
                 }
-            case .duration:
-                Stepper(value: $valueDraft, in: 0...36000, step: 60) {
-                    Text(valueDraft == 0 ? "—" : (habit?.formatValue(valueDraft) ?? "\(Int(valueDraft / 60)) min"))
-                }
+                Spacer()
             }
         }
+    }
+
+    private var countBinding: Binding<Int> {
+        Binding(
+            get: { Int(valueDraft) },
+            set: { valueDraft = Double(max(0, $0)) }
+        )
+    }
+
+    private var durationBinding: Binding<Int> {
+        Binding(
+            get: { Int(valueDraft / 60) },
+            set: { valueDraft = Double(max(0, $0)) * 60 }
+        )
     }
 
     @ViewBuilder

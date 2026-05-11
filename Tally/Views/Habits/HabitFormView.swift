@@ -262,12 +262,19 @@ private struct GoalBlock: View {
 
             switch goalKind {
             case .count:
-                Stepper(value: $countTarget, in: 1...999) {
-                    HStack {
-                        Text("Target")
-                        Spacer()
-                        Text(targetCountLabel).foregroundStyle(.secondary)
-                    }
+                HStack {
+                    Text("Target")
+                    Spacer()
+                    TextField("1", value: $countTarget, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 120)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(.primary)
+                        #if os(iOS)
+                        .keyboardType(.numberPad)
+                        #endif
+                    Text(targetUnitLabel)
+                        .foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Unit (optional)")
@@ -282,27 +289,29 @@ private struct GoalBlock: View {
                         #endif
                 }
             case .duration:
-                Stepper(value: $durationMinutes, in: 1...600, step: 5) {
-                    HStack {
-                        Text("Duration")
-                        Spacer()
-                        Text(formatDuration(durationMinutes)).foregroundStyle(.secondary)
-                    }
+                HStack {
+                    Text("Duration")
+                    Spacer()
+                    TextField("30", value: $durationMinutes, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 120)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(.primary)
+                        #if os(iOS)
+                        .keyboardType(.numberPad)
+                        #endif
+                    Text("min")
+                        .foregroundStyle(.secondary)
                 }
             }
         }
     }
 
-    private var targetCountLabel: String {
+    private var targetUnitLabel: String {
         let trimmed = unit.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "\(countTarget)×" : "\(countTarget) \(trimmed)"
+        return trimmed.isEmpty ? "×" : trimmed
     }
 
-    private func formatDuration(_ m: Int) -> String {
-        if m < 60 { return "\(m) min" }
-        let h = m / 60, r = m % 60
-        return r == 0 ? "\(h) hr" : "\(h) hr \(r) min"
-    }
 }
 
 private struct ScheduleBlock: View {

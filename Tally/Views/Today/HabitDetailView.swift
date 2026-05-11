@@ -201,6 +201,9 @@ private struct CountController: View {
                     .font(.title3)
                     .foregroundStyle(theme.textSecondary)
                 Spacer()
+                Image(systemName: "square.and.pencil")
+                    .font(.title3)
+                    .foregroundStyle(theme.textTertiary)
             }
             .contentShape(Rectangle())
             .onTapGesture { editorOpen = true }
@@ -250,13 +253,20 @@ private struct DurationController: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TimelineView(.periodic(from: .now, by: 1)) { tcontext in
-                let live = isActive ? timer.elapsedSeconds(now: tcontext.date) : 0
-                Text(formatHMS(bankedSeconds + live))
-                    .font(.system(size: 56, weight: .light, design: .rounded))
-                    .monospacedDigit()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(theme.textPrimary)
+            HStack {
+                TimelineView(.periodic(from: .now, by: 1)) { tcontext in
+                    let live = isActive ? timer.elapsedSeconds(now: tcontext.date) : 0
+                    Text(formatHMS(bankedSeconds + live))
+                        .font(.system(size: 56, weight: .light, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(theme.textPrimary)
+                }
+                Spacer()
+                if !isActive {
+                    Image(systemName: "square.and.pencil")
+                        .font(.title3)
+                        .foregroundStyle(theme.textTertiary)
+                }
             }
             .contentShape(Rectangle())
             .onTapGesture {
