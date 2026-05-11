@@ -7,24 +7,29 @@ struct LogSection: View {
     @Environment(\.theme) private var theme
 
     let habit: Habit
-    @Query private var todayLogs: [ActivityLog]
+    @Query private var allTodayLogs: [ActivityLog]
 
     @State private var creating: Bool = false
     @State private var editingLog: ActivityLog?
 
     init(habit: Habit) {
         self.habit = habit
-        let habitID = habit.id
         let start = Calendar.current.startOfDay(for: .now)
         let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
-        _todayLogs = Query(
+        // SwiftData can't translate two-level optional chains
+        // (`log.entry?.habit?.id`) to SQL — it crashes at fetch with a
+        // "Unsupported function expression TERNARY" exception. Fetch by date
+        // only, then filter by habit in memory (volume is tiny).
+        _allTodayLogs = Query(
             filter: #Predicate<ActivityLog> { log in
-                log.loggedAt >= start
-                && log.loggedAt < end
-                && log.entry?.habit?.id == habitID
+                log.loggedAt >= start && log.loggedAt < end
             },
             sort: [SortDescriptor(\ActivityLog.loggedAt, order: .reverse)]
         )
+    }
+
+    private var todayLogs: [ActivityLog] {
+        allTodayLogs.filter { $0.entry?.habit?.id == habit.id }
     }
 
     var body: some View {
