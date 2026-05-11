@@ -7,7 +7,7 @@ final class Entry {
     var date: Date = Date()
     var value: Double = 0
     var note: String? = nil
-    var source: EntrySource = EntrySource.manual
+    var source: EntrySource? = nil
     var createdAt: Date = Date()
 
     var habit: Habit?
@@ -18,7 +18,7 @@ final class Entry {
     @Relationship(deleteRule: .cascade, inverse: \ActivityLog.entry)
     var logs: [ActivityLog] = []
 
-    init(habit: Habit, date: Date, value: Double = 0, note: String? = nil, source: EntrySource = .manual) {
+    init(habit: Habit, date: Date, value: Double = 0, note: String? = nil, source: EntrySource? = nil) {
         self.id = UUID()
         self.habit = habit
         self.date = Calendar.current.startOfDay(for: date)

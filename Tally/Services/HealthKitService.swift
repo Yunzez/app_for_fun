@@ -75,7 +75,7 @@ final class HealthKitService {
                 let storeFacade = HabitStore(context: context)
                 let entry = storeFacade.entry(for: habit)
                 // Manual entries with a value win — never overwrite them.
-                if entry.source == .manual && entry.value > 0 { continue }
+                if (entry.source ?? .manual) == .manual && entry.value > 0 { continue }
                 entry.value = value
                 entry.source = .healthkit
             } catch {
