@@ -20,7 +20,6 @@ struct HabitStore {
         unit: String,
         direction: GoalDirection,
         schedule: HabitSchedule,
-        showOnToday: Bool,
         reminderTime: Date?,
         healthBinding: HealthBinding?
     ) -> Habit {
@@ -34,7 +33,6 @@ struct HabitStore {
             unit: unit,
             direction: direction,
             schedule: schedule,
-            showOnToday: showOnToday,
             reminderTime: reminderTime,
             healthBinding: healthBinding,
             sortOrder: nextSortOrder

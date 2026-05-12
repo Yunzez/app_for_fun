@@ -8,7 +8,7 @@ struct ContentView: View {
     var body: some View {
         TabView {
             TodayView()
-                .tabItem { Label("Today", systemImage: "checkmark.circle") }
+                .tabItem { Label("Tasks", systemImage: "checklist") }
 
             HabitListView()
                 .tabItem { Label("Habits", systemImage: "list.bullet") }

@@ -15,11 +15,6 @@ final class Habit {
     /// Optional to survive lightweight migration from before the field
     /// existed. Treat nil as `.atLeast`.
     var direction: GoalDirection? = nil
-    /// If false, the habit never appears on the Today tab regardless of
-    /// schedule (e.g., for "background" trackers the user manages from Habits).
-    /// Optional for the same migration reason as `direction` — legacy rows
-    /// load as nil and resolve to `true` (visible by default).
-    var showOnToday: Bool? = nil
 
     /// Persisted JSON form of `schedule`. SwiftData can't natively persist
     /// `Codable` enums with `Set`-typed associated values (it errors with
@@ -84,7 +79,6 @@ final class Habit {
         unit: String = "",
         direction: GoalDirection = .atLeast,
         schedule: HabitSchedule = .daily,
-        showOnToday: Bool? = true,
         reminderTime: Date? = nil,
         healthBinding: HealthBinding? = nil,
         sortOrder: Int = 0
@@ -98,7 +92,6 @@ final class Habit {
         self.unit = unit
         self.direction = direction
         self.scheduleData = (try? JSONEncoder().encode(schedule)) ?? Data()
-        self.showOnToday = showOnToday
         self.reminderTime = reminderTime
         self.healthBinding = healthBinding
         self.sortOrder = sortOrder
@@ -111,16 +104,11 @@ extension Habit {
     /// Effective direction, falling back to `.atLeast` for legacy rows.
     var resolvedDirection: GoalDirection { direction ?? .atLeast }
 
-    /// Effective Today visibility, defaulting to `true` for legacy rows
-    /// (loaded as nil).
-    var resolvedShowOnToday: Bool { showOnToday ?? true }
-
-    /// Should this habit be shown on Today right now? Combines `showOnToday`,
-    /// the schedule type, and (for `.flexible`) the cooldown since last active
-    /// entry. Flexible habits also hide once today already has activity — the
-    /// cooldown is "do it, then come back in N days".
+    /// Is this habit scheduled to be done on `date`? Combines the schedule
+    /// rule with (for `.flexible`) the cooldown since last active entry.
+    /// Flexible habits also resolve to false once today already has activity
+    /// — the cooldown is "do it, then come back in N days".
     func isScheduledForToday(_ date: Date = .now, calendar: Calendar = .current) -> Bool {
-        guard resolvedShowOnToday else { return false }
         switch schedule {
         case .daily, .weekly, .monthly:
             return schedule.isScheduled(on: date, calendar: calendar)

@@ -21,7 +21,6 @@ struct HabitFormView: View {
     @State private var weeklyDays: Set<Weekday> = [.monday, .wednesday, .friday]
     @State private var monthlyDays: Set<Int> = [1]
     @State private var flexibleEveryDays: Int = 3
-    @State private var showOnToday: Bool = true
     @State private var hasReminder: Bool = false
     @State private var reminderTime: Date = HabitFormView.defaultReminderTime
     @State private var healthBinding: HealthBinding? = nil
@@ -66,8 +65,7 @@ struct HabitFormView: View {
                         scheduleKind: $scheduleKind,
                         weeklyDays: $weeklyDays,
                         monthlyDays: $monthlyDays,
-                        flexibleEveryDays: $flexibleEveryDays,
-                        showOnToday: $showOnToday
+                        flexibleEveryDays: $flexibleEveryDays
                     )
                     Divider()
                     ReminderBlock(hasReminder: $hasReminder, reminderTime: $reminderTime)
@@ -124,7 +122,6 @@ struct HabitFormView: View {
         }
         unit = habit.unit
         direction = habit.resolvedDirection
-        showOnToday = habit.resolvedShowOnToday
         switch habit.schedule {
         case .daily:
             scheduleKind = .daily
@@ -172,7 +169,6 @@ struct HabitFormView: View {
             habit.unit = trimmedUnit
             habit.direction = direction
             habit.schedule = schedule
-            habit.showOnToday = showOnToday
             habit.reminderTime = reminder
             habit.healthBinding = healthBinding
         } else {
@@ -185,7 +181,6 @@ struct HabitFormView: View {
                 unit: trimmedUnit,
                 direction: direction,
                 schedule: schedule,
-                showOnToday: showOnToday,
                 reminderTime: reminder,
                 healthBinding: healthBinding
             )
@@ -319,7 +314,6 @@ private struct ScheduleBlock: View {
     @Binding var weeklyDays: Set<Weekday>
     @Binding var monthlyDays: Set<Int>
     @Binding var flexibleEveryDays: Int
-    @Binding var showOnToday: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -349,8 +343,6 @@ private struct ScheduleBlock: View {
                     }
                 }
             }
-
-            Toggle("Show on Today tab", isOn: $showOnToday)
         }
     }
 }

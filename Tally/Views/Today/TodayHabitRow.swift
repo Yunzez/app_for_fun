@@ -87,6 +87,10 @@ struct TodayHabitRow: View {
     }
 
     private var progressText: String {
-        habit.formatProgress(bankedValue)
+        var parts: [String] = [habit.formatProgress(bankedValue)]
+        if case .flexible(let n) = habit.schedule {
+            parts.append(n == 1 ? "every day" : "every \(n) days")
+        }
+        return parts.joined(separator: " · ")
     }
 }
