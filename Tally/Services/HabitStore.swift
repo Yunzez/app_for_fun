@@ -100,31 +100,52 @@ struct HabitStore {
         entry.note = (trimmed?.isEmpty ?? true) ? nil : trimmed
     }
 
-    // MARK: - Logs
+    // MARK: - Logs & Plans
 
-    /// Add a log to today's entry for `habit`. If `value > 0`, also credits
-    /// today's Entry.value by that amount (loose attribution: one-shot on create;
-    /// subsequent edits/deletes do not propagate).
+    /// Add a completed log directly under `habit` (retroactive: "I did this").
+    /// If `value > 0`, credits the entry once (loose attribution).
     @discardableResult
     func addLog(to habit: Habit, title: String, value: Double = 0, on date: Date = .now) -> ActivityLog {
-        let parent = entry(for: habit, on: date)
-        let log = ActivityLog(title: title, value: value, entry: parent, loggedAt: .now)
+        let log = ActivityLog(title: title, value: value, habit: habit, completedAt: date)
         context.insert(log)
         if value > 0 {
+            let parent = entry(for: habit, on: date)
             parent.value += value
             parent.source = .manual
         }
         return log
     }
 
-    /// Update a log's title and/or value in place. Per loose attribution,
-    /// this does NOT change the parent Entry.value.
+    /// Add a plan (pre-completion). `habit` is optional — nil = loose/inbox,
+    /// user picks the habit when marking it done.
+    @discardableResult
+    func addPlan(title: String, value: Double = 0, habit: Habit? = nil) -> ActivityLog {
+        let plan = ActivityLog(title: title, value: value, habit: habit, completedAt: nil)
+        context.insert(plan)
+        return plan
+    }
+
+    /// Mark a plan done and attribute to a habit. Credits the entry on the
+    /// completion day if `value > 0`. Plan becomes a log.
+    func complete(_ plan: ActivityLog, habit: Habit, value: Double, on date: Date = .now) {
+        plan.habit = habit
+        plan.value = value
+        plan.completedAt = date
+        if value > 0 {
+            let parent = entry(for: habit, on: date)
+            parent.value += value
+            parent.source = .manual
+        }
+    }
+
+    /// Update an existing log or plan in place. Per loose attribution, does
+    /// NOT change the parent Entry.value.
     func updateLog(_ log: ActivityLog, title: String? = nil, value: Double? = nil) {
         if let title { log.title = title }
         if let value { log.value = value }
     }
 
-    /// Delete a log. Per loose attribution, this does NOT subtract from
+    /// Delete a log or plan. Per loose attribution, does NOT subtract from
     /// Entry.value — the credit stays. Users can adjust the entry manually
     /// if they want to undo.
     func delete(_ log: ActivityLog) {

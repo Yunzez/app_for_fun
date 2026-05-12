@@ -46,6 +46,9 @@ final class Habit {
     @Relationship(deleteRule: .cascade, inverse: \Entry.habit)
     var entries: [Entry] = []
 
+    @Relationship(deleteRule: .cascade, inverse: \ActivityLog.habit)
+    var logs: [ActivityLog] = []
+
     /// `value` is in the native unit (raw count for `.count`, seconds for
     /// `.duration`). Renders with the habit's display unit.
     /// Examples: "12", "12 pages", "30 min".

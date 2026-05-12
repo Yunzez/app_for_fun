@@ -38,6 +38,6 @@ struct LogRow: View {
     private var timeLabel: String {
         let f = DateFormatter()
         f.dateFormat = "h:mm a"
-        return f.string(from: log.loggedAt)
+        return f.string(from: log.completedAt ?? log.createdAt)
     }
 }

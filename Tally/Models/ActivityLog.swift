@@ -1,26 +1,39 @@
 import Foundation
 import SwiftData
 
-/// A user-added line item under a day's `Entry`. Captures *what* the user
-/// actually did during the habit's time/units — e.g., "Bench press 3×8".
+/// A user-added line item. Lives in two states:
+///   - **Plan**: `completedAt == nil`. The user typed it intending to do it
+///     later. `habit` may be nil (loose / inbox) or pre-attached.
+///   - **Log**: `completedAt != nil`. The user marked it done; if a habit
+///     was attached and `value > 0`, it credited that habit's entry on
+///     completion (loose attribution: subsequent edits/deletes do not
+///     propagate back to the entry).
 ///
-/// Loose attribution (design): creating a log with `value > 0` credits the
-/// parent `Entry.value` once. Edits and deletes do NOT propagate. Treat the
-/// log as a labelled credit, not a strict line item.
+/// Plans are shown in the Plan section on Today. Logs are shown in the
+/// destination habit's Logs section, scoped to their completion day.
 @Model
 final class ActivityLog {
     var id: UUID = UUID()
     var title: String = ""
     var value: Double = 0
-    var loggedAt: Date = Date()
+    var habit: Habit?
+    var createdAt: Date = Date()
+    var completedAt: Date? = nil
 
-    var entry: Entry?
-
-    init(title: String, value: Double = 0, entry: Entry? = nil, loggedAt: Date = .now) {
+    init(
+        title: String,
+        value: Double = 0,
+        habit: Habit? = nil,
+        completedAt: Date? = nil
+    ) {
         self.id = UUID()
         self.title = title
         self.value = value
-        self.entry = entry
-        self.loggedAt = loggedAt
+        self.habit = habit
+        self.createdAt = .now
+        self.completedAt = completedAt
     }
+
+    var isPlan: Bool { completedAt == nil }
+    var isCompleted: Bool { completedAt != nil }
 }

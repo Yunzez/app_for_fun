@@ -1,35 +1,39 @@
 import SwiftUI
 import SwiftData
 
-/// Section inside HabitDetailView that lists today's activity logs and
-/// lets the user add new ones. Replaces the old task/inbox concept.
+/// Section inside HabitDetailView that lists today's completed activity logs
+/// (`completedAt` falls on today) for this habit. Lets the user add a new
+/// retroactive log. Plans live in Today's Plan section, not here.
 struct LogSection: View {
     @Environment(\.theme) private var theme
 
     let habit: Habit
-    @Query private var allTodayLogs: [ActivityLog]
+    @Query private var allRecentLogs: [ActivityLog]
 
     @State private var creating: Bool = false
     @State private var editingLog: ActivityLog?
 
     init(habit: Habit) {
         self.habit = habit
-        let start = Calendar.current.startOfDay(for: .now)
-        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
-        // SwiftData can't translate two-level optional chains
-        // (`log.entry?.habit?.id`) to SQL — it crashes at fetch with a
-        // "Unsupported function expression TERNARY" exception. Fetch by date
-        // only, then filter by habit in memory (volume is tiny).
-        _allTodayLogs = Query(
+        // Bound the fetch to recent logs so we don't pull the entire table;
+        // do the today + habit + completed filter in Swift to avoid SwiftData
+        // predicate gotchas with two-level optional chains and optional Dates.
+        let earliest = Calendar.current.date(byAdding: .day, value: -30, to: .now) ?? .now
+        _allRecentLogs = Query(
             filter: #Predicate<ActivityLog> { log in
-                log.loggedAt >= start && log.loggedAt < end
+                log.createdAt >= earliest
             },
-            sort: [SortDescriptor(\ActivityLog.loggedAt, order: .reverse)]
+            sort: [SortDescriptor(\ActivityLog.createdAt, order: .reverse)]
         )
     }
 
     private var todayLogs: [ActivityLog] {
-        allTodayLogs.filter { $0.entry?.habit?.id == habit.id }
+        let cal = Calendar.current
+        return allRecentLogs.filter { log in
+            guard let completed = log.completedAt else { return false }
+            return cal.isDate(completed, inSameDayAs: .now)
+                && log.habit?.id == habit.id
+        }
     }
 
     var body: some View {
